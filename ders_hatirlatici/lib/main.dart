@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:ders_hatirlatici/Settings.dart';
 import 'package:ders_hatirlatici/notifications.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:excel/excel.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'Single.dart';
@@ -14,6 +16,8 @@ String? selectedDirectory;
 List<Single> s = new List<Single>.empty(growable: true);
 List<String> lecturers = new List<String>.empty(growable: true);
 int tillCancel = 0;
+Color appColor = Colors.white;
+bool darkMode = false;
 
 int WhichMonth(String month){
   switch(month){
@@ -127,18 +131,48 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Ders Hatirlatici',
-      theme: ThemeData(
-        primarySwatch: Colors.orange,
-      ),
-      home: MyHomePage(title: 'Ders Hatirlatici'),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(brightness: SchedulerBinding.instance!.window.platformBrightness, primarySwatch: Colors.orange,
+        appBarTheme: AppBarTheme(
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.orange)),
+      home: MyHomePage(),
     );
   }
 }
+Widget getSideBar(BuildContext context){
+  return Drawer(
+        child: Container(
+          child: ListView(
+            children: [
+              ListTile(
+                leading: Icon(Icons.home),
+                title: Text("Ana Sayfa", textAlign: TextAlign.center,),
+                onTap: (){
+                  if(context.widget.toString() != "MyHomePage")
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) =>MyHomePage()));
+                  else
+                    Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.settings),
+                title: Text("Ayarlar", textAlign: TextAlign.center,),
+                onTap: (){
+                  if(context.widget.toString() != "SettingsSend")
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) =>SettingsSend()));
+                  else
+                    Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+}
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, required this.title}) : super(key: key);
-  final String title;
+  MyHomePage({Key? key}) : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -154,9 +188,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: getSideBar(context),
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text("Ders Hatirlatici"),
         centerTitle: true,
         actions: [
           ElevatedButton.icon(onPressed: () async{
