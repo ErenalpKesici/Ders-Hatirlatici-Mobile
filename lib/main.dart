@@ -24,7 +24,6 @@ String? selectedDirectory;
 List<Single> s = new List<Single>.empty(growable: true);
 int tillCancel = 0;
 bool upToDate = false;
-String curVer = "", checkVer = "";
 int whichMonth(String month){
   switch(month){
     case "Ocak":
