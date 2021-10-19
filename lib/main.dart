@@ -17,15 +17,15 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:http/http.dart' as http;
 
-String XL_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/xl.zip";
-String UPDATE_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/Update.txt";
-String APK_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/app.apk";
+const String XL_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/xl.zip";
+const String UPDATE_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/Update.txt";
+const String APK_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/app.apk";
 String? selectedDirectory;
 List<Single> s = new List<Single>.empty(growable: true);
 int tillCancel = 0;
 bool upToDate = false;
 String curVer = "", checkVer = "";
-int WhichMonth(String month){
+int whichMonth(String month){
   switch(month){
     case "Ocak":
       return 1;
@@ -55,7 +55,7 @@ int WhichMonth(String month){
       return 0;
   }
 }
-Future<List<String>> ReadExcel() async{
+Future<List<String>> readExcel() async{
   List<String> lecturers = new List<String>.empty(growable: true);
   s = new List<Single>.empty(growable: true);
   await for(var file in Directory(selectedDirectory!).list()){
@@ -73,7 +73,7 @@ Future<List<String>> ReadExcel() async{
         if(row[6]?.value == '-' || row[6]?.value == null)continue;
         List<String> date = leadingDate.split(' ');
         List<String> time = readDate.split(':');
-        DateTime currentDate = new DateTime(int.parse(date[2]), WhichMonth(date[1]), int.parse(date[0]), int.parse(time[0]));
+        DateTime currentDate = new DateTime(int.parse(date[2]), whichMonth(date[1]), int.parse(date[0]), int.parse(time[0]));
         String tmpCourse = file.path.split('/').last;
         String course = tmpCourse[0];
         for(int i = 1;i<tmpCourse.length;i++){
@@ -132,12 +132,12 @@ Future<bool> internetConnectivity() async {
 }
 ReceivePort _port = ReceivePort();
 void main() async{
-  await WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
   await FlutterDownloader.initialize(debug: true);
   if(await Permission.storage.request().isGranted){
     final externalDir = await getExternalStorageDirectory();
     selectedDirectory = externalDir!.path +"/xl"; 
-    await Timer.periodic(Duration(seconds: 2), (timer) async{ 
+    Timer.periodic(Duration(seconds: 2), (timer) async{ 
       if (await InternetConnectionChecker().hasConnection){   
         if(await File(externalDir.path +"/xl.zip").exists()){
           http.Response r = await http.head(Uri.parse(XL_URL));
@@ -262,7 +262,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
 	  FlutterDownloader.registerCallback(downloadCallback);
     if(upToDate){
-      loadLecturers = ReadExcel(); 
+      loadLecturers = readExcel(); 
       loadCourses = readCourses();
       return;
     }
@@ -279,7 +279,7 @@ class _MyHomePageState extends State<MyHomePage> {
           await ZipFile.extractToDirectory(zipFile: File(externalDir.path+"/xl.zip"), destinationDir: Directory(externalDir.path +"/xl"));
           print(status.value); 
           setState(() {
-            loadLecturers = ReadExcel();
+            loadLecturers = readExcel();
             loadCourses = readCourses();
           });
         } catch (e) {
