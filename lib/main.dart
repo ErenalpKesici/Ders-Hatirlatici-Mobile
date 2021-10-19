@@ -16,10 +16,9 @@ import 'package:flutter_archive/flutter_archive.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:http/http.dart' as http;
-//MAIN
+
 const String XL_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/xl.zip";
 const String UPDATE_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/Update.txt";
-const String APK_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/app.apk";
 String? selectedDirectory;
 List<Single> s = new List<Single>.empty(growable: true);
 int tillCancel = 0;
