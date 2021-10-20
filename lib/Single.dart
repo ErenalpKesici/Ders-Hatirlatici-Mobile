@@ -9,6 +9,6 @@ class Single{
   Single(this.date, this.course, this.lecturer, this.topic, this.type);
   @override
   String toString() {
-    return DateFormat('dd/MM/yyyy').format(this.date) + " - " + this.course + " - " + this.lecturer + " - " +  this.topic + " - " +  this.type;
+    return this.course + " - " + this.lecturer + " - " +  this.topic + " - " +  this.type + " - " + DateFormat('dd/MM/yyyy').format(this.date);
   }
 }

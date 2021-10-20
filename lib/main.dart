@@ -237,11 +237,12 @@ Future<List<String>> readCourses() async{
 
 class _MyHomePageState extends State<MyHomePage> {
   String selectedLecturer = 'Tüm Eğiticiler', selectedCourse = "Tüm Dersler";
+  String timeType = "Dakika";
   DateTime selectedDate1 = DateTime.now();
   DateTime selectedDate2 = DateTime.now();
   bool dt2Checked = true;
   int? selectedRadio = 0;
-  TextEditingController minuteBefore = new TextEditingController(text: "10");
+  TextEditingController timeBefore = new TextEditingController(text: "10");
   Icon alarmIcon = Icon(Icons.alarm_off);
   Future<List<String>>? loadLecturers, loadCourses;
   GestureDetector? gdDate1, gdDate2;
@@ -297,6 +298,9 @@ class _MyHomePageState extends State<MyHomePage> {
   static void downloadCallback(String id, DownloadTaskStatus status, int progress) async{
     final SendPort? send = IsolateNameServer.lookupPortByName('downloader_send_port');
     send!.send([id, status, progress]);
+  }
+  bool validSingle(String lecturer, String course){
+    return (selectedLecturer == "Tüm Eğiticiler" || lecturer == selectedLecturer) && (selectedCourse == "Tüm Dersler" || selectedCourse == course);
   }
   @override
   Widget build(BuildContext context) {
@@ -379,7 +383,8 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text("Ders Hatırlatıcı"),
         centerTitle: true,
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -393,7 +398,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       return DropdownMenuItem(
                         alignment: AlignmentDirectional.center,
                         value: value,
-                        child: Text(value),
+                        child: Row(children: [Icon(Icons.person), SizedBox(width: 5,), Text(value)],) ,
                         );
                     }).toList(),
                   onChanged: (String? value) {
@@ -408,7 +413,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 return CircularProgressIndicator();
               }
             ),
-            SizedBox(height: 25),
             FutureBuilder<List<String>>(
               future: loadCourses,
               builder: (BuildContext context, AsyncSnapshot snapshot){
@@ -419,7 +423,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       return DropdownMenuItem(
                         alignment: AlignmentDirectional.center,
                         value: value,
-                        child: Text(value),
+                         child: Row(children: [Icon(Icons.cast_for_education_rounded), SizedBox(width: 5,), Text(value)],) ,
                       );
                     }).toList(),
                   onChanged: (String? value) {
@@ -434,41 +438,84 @@ class _MyHomePageState extends State<MyHomePage> {
                 return CircularProgressIndicator();
               }
             ),
-            SizedBox(height: 25,),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+              child: Divider(thickness: 1),
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
                   width: 50,
+                  height: 30,
                   child: TextField(
-                    controller: minuteBefore,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(hintText: "10", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
+                    controller: timeBefore,
                     textAlign: TextAlign.center,
-                    decoration: InputDecoration(
-                    hintText: "10"),
-                  ),
+                    ),
+                ),
+                SizedBox(width: 10,),
+                DropdownButton<String>(
+                  alignment: AlignmentDirectional.center,
+                  value: timeType,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      timeType = newValue!;
+                    });
+                  },
+                  items: <String>['Dakika', 'Saat', 'Gün'].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      alignment: AlignmentDirectional.center,
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
                 ),
                 SizedBox(width: 10,),
                 ElevatedButton.icon(onPressed: (){
+                  bool foundSingle = false;
                   for(Single single in s){
                     DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
                     DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
-                    if((selectedLecturer == "Tüm Eğiticiler" || single.lecturer == selectedLecturer) && singleDt.compareTo(nowDate) == 1){                    
-                        int difference = single.date.difference(DateTime.now()).inSeconds;
-                        if(difference - int.parse(minuteBefore.value.text)*60 < 0)continue;
-                        MyNotifications notify = new MyNotifications();
-                        tillCancel = difference - int.parse(minuteBefore.value.text)*60;
-                        notify.scheduleNotify(tillCancel, single);
-                        FlutterBackgroundService.initialize(onStart);
-                        setState(() {
-                          alarmIcon = Icon(Icons.alarm_on);
-                        });
-                        break;
+                    if(validSingle(single.lecturer, single.course) && singleDt.compareTo(nowDate) == 1){                    
+                      int difference = single.date.difference(DateTime.now()).inSeconds;
+                      int multiplier = 0;
+                      switch(timeType){
+                        case "Dakika":
+                          multiplier = 60;
+                          break;
+                        case "Saat":
+                          multiplier = 3600;
+                          break;
+                        case "Gün":
+                          multiplier = 86400;
+                          break;
                       }
+                      print(difference.toString() +" " + (int.parse(timeBefore.value.text)*multiplier).toString());
+                      if(difference - int.parse(timeBefore.value.text)*multiplier < 0)continue;
+                      MyNotifications notify = new MyNotifications();
+                      tillCancel = difference - int.parse(timeBefore.value.text)*multiplier;
+                      notify.scheduleNotify(tillCancel, single);
+                      FocusScope.of(context).unfocus();
+                      ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('En yakın derse ' + (tillCancel/60).ceil().toString() +  ' dakika içinde hatırlatılıcaksınız.', textAlign: TextAlign.center)));
+                      // FlutterBackgroundService.initialize(onStart);
+                      setState(() {
+                        alarmIcon = Icon(Icons.alarm_on);
+                      });
+                      foundSingle = true;
+                      break;
+                    }
                   }
-                }, icon: alarmIcon, label: Text('Dakika Kalınca Hatırlat'), style: ElevatedButton.styleFrom(primary: Colors.orange[200]),),
+                  if(!foundSingle)
+                  ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Seçilenlere göre yakında bir ders bulunamadı.', textAlign: TextAlign.center)));
+                }, icon: alarmIcon, label: Text('Kalınca Hatırlat'), style: ElevatedButton.styleFrom(primary: Colors.orange[200]),),
               ],
             ),
-            SizedBox(height: 25,),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+              child: Divider(thickness: 1),
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -493,14 +540,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day);
                   DateTime selectedDt1 = new DateTime(selectedDate1.year, selectedDate1.month, selectedDate1.day);
                   DateTime selectedDt2 = new DateTime(selectedDate2.year, selectedDate2.month, selectedDate2.day);
-                  if((selectedLecturer == "Tüm Eğiticiler" || single.lecturer == selectedLecturer) && (singleDt.compareTo(selectedDt1) > -1 && singleDt.compareTo(selectedDt2) < 1) && (selectedCourse == "Tüm Dersler" || selectedCourse == single.course))
+                  if(validSingle(single.lecturer, single.course) && (singleDt.compareTo(selectedDt1) > -1 && singleDt.compareTo(selectedDt2) < 1))
                     toSendS.add(single);
                 }
               else{
                  for(Single single in s){
                   DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day);
                   DateTime selectedDt = new DateTime(selectedDate1.year, selectedDate1.month, selectedDate1.day);
-                  if((selectedLecturer == "Tüm Eğiticiler" || single.lecturer == selectedLecturer) && (singleDt.compareTo(selectedDt) == 0) && (selectedCourse == "Tüm Dersler" || selectedCourse == single.course))
+                  if(validSingle(single.lecturer, single.course) && (singleDt.compareTo(selectedDt) == 0))
                     toSendS.add(single);
                 }
               }
@@ -508,10 +555,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: DateFormat('dd/MM/yyyy').format(selectedDate1)+" - " + DateFormat('dd/MM/yyyy').format(selectedDate2),)));
                 else
                   ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders Bulunamadı', textAlign: TextAlign.center)));
-            }, icon: Icon(Icons.find_in_page), label: Text('Dersleri Listele')),
-            SizedBox(height: 25,),
-            Divider(
-              thickness: 1,
+            }, icon: Icon(Icons.list_rounded), label: Text('Dersleri Listele')),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+              child: Divider(thickness: 1),
             ),
             Container(
               width: MediaQuery. of(context). size. width/2,
@@ -547,7 +594,7 @@ class _MyHomePageState extends State<MyHomePage> {
               for(Single single in s){
                 DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
                 DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
-                if((selectedLecturer == "Tüm Eğiticilerler" || single.lecturer == selectedLecturer) && ((selectedRadio == 1 && singleDt.compareTo(nowDate) == 0) || selectedRadio == 0 && singleDt.compareTo(nowDate)  == 1 && (selectedCourse == "Tüm Dersler" || selectedCourse == single.course))){
+                if(validSingle(single.lecturer, single.course) && ((selectedRadio == 1 && singleDt.compareTo(nowDate) == 0) || selectedRadio == 0 && singleDt.compareTo(nowDate)  == 1)){
                     toSendS.add(single);
                     break;}
               }
@@ -555,7 +602,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: selectedRadio == 0?'En Yakındaki Ders':'Şuandaki Ders',)));
               else
                 ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders Bulunamadı', textAlign: TextAlign.center)));
-            }, icon: Icon(Icons.find_replace_outlined), label: Text('Dersi Bul'),)
+            }, icon: Icon(Icons.find_in_page_rounded), label: Text('Dersi Bul'),)
           ],
         ),
       ),
