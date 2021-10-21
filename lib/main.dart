@@ -12,7 +12,6 @@ import 'package:flutter/scheduler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'Single.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_archive/flutter_archive.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -25,7 +24,7 @@ String? selectedDirectory;
 List<Single> s = new List<Single>.empty(growable: true);
 int tillCancel = 0;
 bool upToDate = false;
-Backup save = new Backup("Tüm Eğiticiler", "Tüm Sınıflar", "Tüm Konular", "10", "Dakika");
+Backup save = new Backup("Tüm Eğiticiler", "Tüm Sınıflar", "Tüm Konular", "Tüm Tipler", "10", "Dakika");
 int whichMonth(String month){
   switch(month){
     case "Ocak":
@@ -143,22 +142,25 @@ List<String> individualize(String type){
     }
     return topics;
   }
+  if(type == "types"){
+    List<String> types = new List<String>.empty(growable: true);
+    types.add("Tüm Tipler");
+    bool unique = true;
+    for(Single single in s){
+      for(String type in types){
+        if(single.type == type){
+          unique = false;
+          break;
+        }
+      }
+      if(unique)
+        types.add(single.type);
+      else
+        unique = true;
+    }
+    return types;
+  }
   return List.empty();
-}
-void onStart() {
-  WidgetsFlutterBinding.ensureInitialized();
-  final service = FlutterBackgroundService();
-  service.setForegroundMode(true);
-  Timer.periodic(Duration(seconds: 1), (timer) async {
-    if (!(await service.isServiceRunning())) timer.cancel();
-    service.setNotificationInfo(
-      title: "My App Service",
-      content: "Updated at ${DateTime.now()} " + tillCancel.toString(),
-    );
-    service.sendData(
-      {"current_date": DateTime.now().toIso8601String()},
-    );
-  });
 }
 Future<bool> internetConnectivity() async {
   try {
@@ -222,6 +224,9 @@ void main() async{
             break;
           case "topic":
             save.topic = value;
+            break;
+          case "type":
+            save.type = value;
             break;
           case "time":
             save.time = value;
@@ -344,7 +349,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   Icon alarmIcon = Icon(Icons.alarm_off);
   Future<List<Single>>? loadLecturers, loadCourses, loadTopics;
   GestureDetector? gdDate1, gdDate2;
-  List<String> lecturers = List.empty(growable: true), courses = List.empty(growable: true), topics = List.empty(growable: true);
+  List<String> uniqueLecturers = List.empty(growable: true), uniqueCourses = List.empty(growable: true), uniqueTopics = List.empty(growable: true), uniqueTypes = List.empty(growable: true);
   bool lastDate = false;
   void download() async{
     final externalDir = await getExternalStorageDirectory();
@@ -359,9 +364,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void initState(){
     super.initState();
     WidgetsBinding.instance?.addObserver(this);
-    lecturers = individualize("lecturers");
-    courses = individualize("courses");
-    topics = individualize("topics");
+    uniqueLecturers = individualize("lecturers");
+    uniqueCourses = individualize("courses");
+    uniqueTopics = individualize("topics");
+    uniqueTypes = individualize("types");
   }
   @override
   void dispose() {
@@ -369,7 +375,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     super.dispose();
   }
   bool validSingle(Single single){
-    return (save.lecturer == "Tüm Eğiticiler" || single.lecturer == save.lecturer) && (save.course == "Tüm Sınıflar" || save.course == single.course) && (save.topic == "Tüm Konular" || save.topic == single.topic);
+    return (save.lecturer == "Tüm Eğiticiler" || single.lecturer == save.lecturer) && (save.course == "Tüm Sınıflar" || save.course == single.course) && (save.topic == "Tüm Konular" || save.topic == single.topic) && (save.type == "Tüm Tipler" || save.type == single.type);
   }
   void saveSelections(Backup save)async{
     final externalDir = await getExternalStorageDirectory();
@@ -380,7 +386,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state)  async{
     if(state == AppLifecycleState.paused)
-      saveSelections(new Backup(save.lecturer, save.course, save.topic, save.time.toString(), save.timeType));
+      saveSelections(new Backup(save.lecturer, save.course, save.topic, save.type, save.time, save.timeType));
   }
   @override
   Widget build(BuildContext context) {
@@ -475,7 +481,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               });
             },
             icon: Icon(Icons.person),
-            items: lecturers.map<DropdownMenuItem<String>>((String value) {
+            items: uniqueLecturers.map<DropdownMenuItem<String>>((String value) {
               return DropdownMenuItem<String>(
                 alignment: AlignmentDirectional.center,
                 value: value,
@@ -492,7 +498,24 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               });
             },
             icon: Icon(Icons.cast_for_education_rounded),
-            items: courses.map<DropdownMenuItem<String>>((String value) {
+            items: uniqueCourses.map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                alignment: AlignmentDirectional.center,
+                value: value,
+                child: Text(value),
+            );
+            }).toList(),
+          ),
+          DropdownButton<String>(
+            alignment: AlignmentDirectional.center,
+            value: save.type,
+            onChanged: (String? newValue) {
+              setState(() {
+                save.type = newValue!;
+              });
+            },
+            icon: Icon(Icons.live_tv_rounded),
+            items: uniqueTypes.map<DropdownMenuItem<String>>((String value) {
               return DropdownMenuItem<String>(
                 alignment: AlignmentDirectional.center,
                 value: value,
@@ -512,7 +535,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 });
               },
               icon: Icon(Icons.topic_rounded),
-              items: topics.map<DropdownMenuItem<String>>((String value) {
+              items: uniqueTopics.map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
                   alignment: AlignmentDirectional.center,
                   value: value,
@@ -557,6 +580,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               ),
               SizedBox(width: 10,),
               ElevatedButton.icon(onPressed: (){
+                save.time = timeBefore.text;
                 bool foundSingle = false;
                 for(Single single in s){
                   DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
@@ -615,38 +639,43 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               )
             ],
           ),
-          ElevatedButton.icon(onPressed: () async{
-            List<Single> toSendS = new List.empty(growable: true);
-            if(dt2Checked)
-              for(Single single in s){
-                DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day);
-                DateTime selectedDt1 = new DateTime(selectedDate1.year, selectedDate1.month, selectedDate1.day);
-                DateTime selectedDt2 = new DateTime(selectedDate2.year, selectedDate2.month, selectedDate2.day);
-                if(validSingle(single) && (singleDt.compareTo(selectedDt1) > -1 && singleDt.compareTo(selectedDt2) < 1))
-                  toSendS.add(single);
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ElevatedButton.icon(onPressed: () async{
+              List<Single> toSendS = new List.empty(growable: true);
+              if(dt2Checked)
+                for(Single single in s){
+                  DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day);
+                  DateTime selectedDt1 = new DateTime(selectedDate1.year, selectedDate1.month, selectedDate1.day);
+                  DateTime selectedDt2 = new DateTime(selectedDate2.year, selectedDate2.month, selectedDate2.day);
+                  if(validSingle(single) && (singleDt.compareTo(selectedDt1) > -1 && singleDt.compareTo(selectedDt2) < 1))
+                    toSendS.add(single);
+                }
+              else{
+                 for(Single single in s){
+                  DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day);
+                  DateTime selectedDt = new DateTime(selectedDate1.year, selectedDate1.month, selectedDate1.day);
+                  if(validSingle(single) && (singleDt.compareTo(selectedDt) == 0))
+                    toSendS.add(single);
+                }
               }
-            else{
-               for(Single single in s){
-                DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day);
-                DateTime selectedDt = new DateTime(selectedDate1.year, selectedDate1.month, selectedDate1.day);
-                if(validSingle(single) && (singleDt.compareTo(selectedDt) == 0))
-                  toSendS.add(single);
+              if(toSendS.length > 0){
+                String lecturer = "", course = "", topic = "", type = "";
+                if(save.lecturer != "Tüm Eğiticiler") 
+                  lecturer = ", " + save.lecturer;
+                if(save.course != "Tüm Sınıflar") 
+                  course = ", " + save.course;
+                if(save.topic != "Tüm Konular") 
+                   topic = ", " + save.topic.substring(0, 15) + (save.topic.length > 15?"...":"");
+                if(save.type != "Tüm Tipler")
+                  type = ", " + save.type;
+                String toSendTitle = DateFormat('dd/MM/yyyy').format(selectedDate1) + " - " + DateFormat('dd/MM/yyyy').format(selectedDate2) + lecturer + course + topic + type;
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: toSendTitle,)));
               }
-            }
-            if(toSendS.length > 0){
-              String lecturer = "", course = "", topic = "";
-              if(save.lecturer != "Tüm Eğiticiler") 
-                lecturer = ", " + save.lecturer;
-              if(save.course != "Tüm Sınıflar") 
-                course = ", " + save.course;
-              if(save.topic != "Tüm Konular") 
-                 topic = ", " + save.topic.substring(0, 15) + (save.topic.length > 15?"...":"");
-              String toSendTitle = DateFormat('dd/MM/yyyy').format(selectedDate1) + " - " + DateFormat('dd/MM/yyyy').format(selectedDate2) + lecturer + course + topic;
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: toSendTitle,)));
-            }
-            else
-              ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders Bulunamadı', textAlign: TextAlign.center)));
-          }, icon: Icon(Icons.list_rounded), label: Text('Sınıfları Listele')),
+              else
+                ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders Bulunamadı', textAlign: TextAlign.center)));
+            }, icon: Icon(Icons.list_rounded), label: Text('Sınıfları Listele')),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
             child: Divider(thickness: 1),
@@ -733,7 +762,8 @@ class ListPage extends State<ListPageSend> {
                 DataColumn(label: Text('Tarih')),
                 if(save.course == "Tüm Sınıflar")
                   DataColumn(label: Text('Sınıf')),
-                DataColumn(label: Text('Tip')),
+                if(save.type == "Tüm Tipler")
+                  DataColumn(label: Text('Tip')),
                 if(save.topic == "Tüm Konular")
                   DataColumn(label: Text('Konu')),
                 if(save.lecturer == "Tüm Eğiticiler")
@@ -750,10 +780,11 @@ class ListPage extends State<ListPageSend> {
     return DataRow(
       color: MaterialStateColor.resolveWith((states) => currentS![index].type == "UE"?Colors.orange[700]!:Colors.lightBlue[700]!),
       cells: <DataCell>[
-        DataCell(Text(currentS![index].date.day.toString() + "/" + currentS![index].date.month.toString() + "/" + currentS![index].date.year.toString() +" " + currentS![index].date.hour.toString()+":00")),
+        DataCell(Text(currentS![index].date.day.toString() + "/" + currentS![index].date.month.toString() + "/" + currentS![index].date.year.toString() +" - " + currentS![index].date.hour.toString()+":00")),
         if(save.course == "Tüm Sınıflar")
           DataCell(Text(currentS![index].course)),
-        DataCell(Text(currentS![index].type)),
+        if(save.type == "Tüm Tipler")
+          DataCell(Text(currentS![index].type)),
         if(save.topic == "Tüm Konular")
           DataCell(Text(currentS![index].topic)),
         if(save.lecturer == "Tüm Eğiticiler")
