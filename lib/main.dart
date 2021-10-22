@@ -274,7 +274,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(brightness: SchedulerBinding.instance!.window.platformBrightness, primarySwatch: Colors.orange,
+      theme: ThemeData(
+        brightness: SchedulerBinding.instance!.window.platformBrightness,
+        primarySwatch: Colors.orange,
+        toggleableActiveColor: Colors.orange,
         appBarTheme: AppBarTheme(
           foregroundColor: Colors.white,
           backgroundColor: Colors.orange)),
@@ -562,6 +565,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 child: Column(
                 children: [
                   TabBar(
+                    indicatorColor: Colors.orange,
                     tabs: [
                       Tab(icon: Icon(Icons.list_sharp), text: "Listele"),
                       Tab(icon: Icon(Icons.find_in_page_sharp), text: "Bul"),
@@ -594,7 +598,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-
                                     gdDate1!,
                                     Text('     -     '),
                                     Column(
@@ -603,8 +606,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                         
                                         gdDate2!
                                       ],
-                                    )
-                                    
+                                    )     
                                   ],
                                 ),
                               Padding(
@@ -644,7 +646,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                     ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders Bulunamadı', textAlign: TextAlign.center)));
                                   }, icon: Icon(Icons.list_rounded), label: Text('Dersleri Listele')),
                               ),
-                              ],
+                            ],
               ),
               Column(
                 children: [
@@ -674,7 +676,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     ),
                           ],
                     ),
-                  ),           
+                  ),   
+                  SizedBox(height: 20,),        
                   ElevatedButton.icon(onPressed: (){
                     if(selectedRadio == null)
                           return;
@@ -695,10 +698,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 50,
-                    height: 30,
+                    height: 40,
                     child: TextField(
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(hintText: "10", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
@@ -761,7 +765,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     }
                     if(!foundSingle)
                     ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Seçilenlere göre yakında bir ders bulunamadı.', textAlign: TextAlign.center)));
-                  }, icon: alarmIcon, label: Text('Kalınca Hatırlat'), style: ElevatedButton.styleFrom(primary: Colors.orange[200]),),
+                  }, icon: alarmIcon, label: Text('Kalınca Hatırlat')),
                 ],
               ),
                     ],
@@ -773,7 +777,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   ),
                 ),
               ),
-
             ],
           ),
         ),
