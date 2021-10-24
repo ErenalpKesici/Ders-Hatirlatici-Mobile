@@ -25,6 +25,8 @@ List<Single> s = new List<Single>.empty(growable: true);
 int tillCancel = 0;
 bool upToDate = false;
 Backup save = new Backup.initial();
+MyNotifications notifications = new MyNotifications();
+
 int whichMonth(String month){
   switch(month){
     case "Ocak":
@@ -467,7 +469,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       }, icon: Icon(Icons.date_range_sharp), label: Text(DateFormat('dd/MM/yyyy').format(selectedDate2)), style: ElevatedButton.styleFrom(primary: dt2Checked?Colors.orange[200]:Colors.grey)));
     return Scaffold(
       drawer: getSideBar(context),
-      resizeToAvoidBottomInset: false,
+      //resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text("Ders Hatırlatıcı"),
         centerTitle: true,
@@ -493,7 +495,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     save.lecturer = newValue!;
                   });
                 },
-                icon: Icon(Icons.person),
+                icon: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Icon(Icons.person),
+                ),
                 items: uniqueLecturers.map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     alignment: AlignmentDirectional.center,
@@ -510,7 +515,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     save.course = newValue!;
                   });
                 },
-                icon: Icon(Icons.cast_for_education_rounded),
+                icon: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Icon(Icons.cast_for_education_rounded),
+                ),
                 items: uniqueCourses.map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     alignment: AlignmentDirectional.center,
@@ -527,7 +535,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     save.type = newValue!;
                   });
                 },
-                icon: Icon(Icons.live_tv_rounded),
+                icon: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Icon(Icons.live_tv_rounded),
+                ),
                 items: uniqueTypes.map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     alignment: AlignmentDirectional.center,
@@ -574,16 +585,17 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   ),
                   Expanded(
                     child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 48, 16, 0),
-                        child: TabBarView(
-                          children: [
-                            Column(
+                      child: TabBarView(
+                        children: [
+                          SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Row(
                                   mainAxisAlignment:MainAxisAlignment.center,
                                   children: [
-                                    Text("Tarihi aralıklı seçme", style: TextStyle(fontSize: 16),),
+                                    Text("Aralıklı tarih seçme", style: TextStyle(fontSize: 16),),
                                     Checkbox(
                                       value: dt2Checked, 
                                       onChanged: (value){
@@ -603,7 +615,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                     Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        
                                         gdDate2!
                                       ],
                                     )     
@@ -647,91 +658,95 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   }, icon: Icon(Icons.list_rounded), label: Text('Dersleri Listele')),
                               ),
                             ],
-              ),
+                              ),
+                          ),
               Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     width: MediaQuery. of(context). size. width/2,
                     child: Column(
-                          children: [
-                            RadioListTile<int>(
-                          value: 0,
-                          groupValue: selectedRadio,
-                          onChanged: (nValue) {
-                            setState(() {
-                              selectedRadio = nValue;
-                            });
-                          },
-                          title: Text("En Yakındaki"),
+                        children: [
+                          RadioListTile<int>(
+                        value: 0,
+                        groupValue: selectedRadio,
+                        onChanged: (nValue) {
+                          setState(() {
+                            selectedRadio = nValue;
+                          });
+                        },
+                        title: Text("En Yakındaki"),
                     ),
                     RadioListTile<int>(
-                          value: 1,
-                          groupValue: selectedRadio,
-                          onChanged: (nValue) {
-                            setState(() {
-                              selectedRadio = nValue;
-                            });
-                          },
-                          title: Text("Şuandaki"),
+                        value: 1,
+                        groupValue: selectedRadio,
+                        onChanged: (nValue) {
+                          setState(() {
+                            selectedRadio = nValue;
+                          });
+                        },
+                        title: Text("Şuandaki"),
                     ),
-                          ],
+                        ],
                     ),
                   ),   
                   SizedBox(height: 20,),        
                   ElevatedButton.icon(onPressed: (){
                     if(selectedRadio == null)
-                          return;
+                        return;
                     List<Single> toSendS = new List.empty(growable: true);
                     for(Single single in s){
-                          DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
-                          DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
-                          if(validSingle(single) && ((selectedRadio == 1 && singleDt.compareTo(nowDate) == 0) || selectedRadio == 0 && singleDt.compareTo(nowDate)  == 1)){
-                              toSendS.add(single);
-                              break;}
+                        DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
+                        DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
+                        if(validSingle(single) && ((selectedRadio == 1 && singleDt.compareTo(nowDate) == 0) || selectedRadio == 0 && singleDt.compareTo(nowDate)  == 1)){
+                            toSendS.add(single);
+                            break;}
                     }
                     if(toSendS.length > 0)
-                          Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: selectedRadio == 0?'En Yakındaki Ders':'Şuandaki Ders',)));
+                        Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: selectedRadio == 0?'En Yakındaki Ders':'Şuandaki Ders',)));
                     else
-                          ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders Bulunamadı', textAlign: TextAlign.center)));
+                        ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders Bulunamadı', textAlign: TextAlign.center)));
                   }, icon: Icon(Icons.find_in_page_rounded), label: Text('Dersi Bul'),),
                 ],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 50,
-                    height: 40,
-                    child: TextField(
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(hintText: "10", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
-                      controller: timeBefore,
-                      textAlign: TextAlign.center,
-                      ),
-                  ),
-                  SizedBox(width: 10,),
-                  DropdownButton<String>(
-                    alignment: AlignmentDirectional.center,
-                    value: save.timeType,
-                    onChanged: (String? newValue) {
-                      setState(() {
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 40,
+                      child: TextField(
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(hintText: "10", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
+                        controller: timeBefore,
+                        textAlign: TextAlign.center,
+                        ),
+                    ),
+                    SizedBox(width: 10,),
+                    DropdownButton<String>(
+                      alignment: AlignmentDirectional.center,
+                      value: save.timeType,
+                      onChanged: (String? newValue) {
+                        setState(() {
                         save.timeType = newValue!;
-                      });
-                    },
-                    items: <String>['Dakika', 'Saat', 'Gün'].map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
+                        });
+                      },
+                      items: <String>['Dakika', 'Saat', 'Gün'].map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
                         alignment: AlignmentDirectional.center,
                         value: value,
                         child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                  SizedBox(width: 10,),
-                  ElevatedButton.icon(onPressed: (){
-                    save.time = timeBefore.text;
-                    bool foundSingle = false;
-                    for(Single single in s){
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(width: 10,),
+                    ElevatedButton.icon(onPressed: (){
+                      save.time = timeBefore.text;
+                      bool foundSingle = false;
+                      for(Single single in s){
                           DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
                           DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
                           if(validSingle(single) && singleDt.compareTo(nowDate) == 1){                    
@@ -750,9 +765,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             }
                             print(difference.toString() +" " + (int.parse(timeBefore.value.text)*multiplier).toString());
                             if(difference - int.parse(timeBefore.value.text)*multiplier < 0)continue;
-                            MyNotifications notify = new MyNotifications();
                             tillCancel = difference - int.parse(timeBefore.value.text)*multiplier;
-                            notify.scheduleNotify(tillCancel, single);
+                            notifications.scheduleNotify(tillCancel, single);
                             FocusScope.of(context).unfocus();
                             ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('En yakın derse ' + (tillCancel/60).ceil().toString() +  ' dakika içinde hatırlatılıcaksınız.', textAlign: TextAlign.center)));
                             // FlutterBackgroundService.initialize(onStart);
@@ -762,15 +776,15 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             foundSingle = true;
                             break;
                           }
-                    }
-                    if(!foundSingle)
-                    ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Seçilenlere göre yakında bir ders bulunamadı.', textAlign: TextAlign.center)));
-                  }, icon: alarmIcon, label: Text('Kalınca Hatırlat')),
-                ],
+                      }
+                      if(!foundSingle)
+                      ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Seçilenlere göre yakında bir ders bulunamadı.', textAlign: TextAlign.center)));
+                    }, icon: alarmIcon, label: Text('Kalınca Hatırlat')),
+                  ],
+                ),
               ),
                     ],
                   ),
-                        ),
                       ),
                 ),
                 ],

@@ -12,6 +12,9 @@ class MyNotifications{
     var initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
     var initializationSettings = InitializationSettings(android: initializationSettingsAndroid, iOS: null);
     await flutterLocalNotificationsPlugin.initialize(initializationSettings,onSelectNotification: (String? payload) async {}); 
-    await flutterLocalNotificationsPlugin.zonedSchedule(0, description.date.difference(DateTime.now()).inMinutes.toString() +" dakika içinde başlıyacak: ", description.toString(), tz.TZDateTime.now(tz.local).add(Duration(seconds: inSeconds)), const NotificationDetails(android: AndroidNotificationDetails('your channel id', 'your channel name', 'your channel description', enableLights: true, sound: RawResourceAndroidNotificationSound('alarm'),)), androidAllowWhileIdle: true, uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
+    await flutterLocalNotificationsPlugin.zonedSchedule(0, description.date.difference(DateTime.now()).inMinutes.toString() +" dakika içinde başlıyacak: ", description.toString(), tz.TZDateTime.now(tz.local).add(Duration(seconds: inSeconds)), const NotificationDetails(android: AndroidNotificationDetails('your channel id', 'your channel name', 'your channel description', enableLights: true, sound: RawResourceAndroidNotificationSound('alarm'), playSound: true)), androidAllowWhileIdle: true, uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
+  }
+  void cancelNotifications(){
+    flutterLocalNotificationsPlugin.cancel(0);
   }
 } 
