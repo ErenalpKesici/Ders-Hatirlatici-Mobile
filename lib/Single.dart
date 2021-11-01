@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:ders_hatirlatici/main.dart';
 
 class Single{
   late DateTime date;
@@ -9,6 +10,9 @@ class Single{
   Single(this.date, this.course, this.lecturer, this.topic, this.type);
   @override
   String toString() {
-    return this.course + " - " + this.lecturer + " - " +  this.topic + " - " +  this.type + " - " + DateFormat('dd/MM/yyyy').format(this.date);
+    return this.course + " " + this.lecturer + " " + this.topic  + " " + this.type + " " + this.date.toString();
+  }
+  String toSave(){
+    return this.course + "& " + this.lecturer + "& " + this.topic  + "& " + this.type + "& " + displayDate(this.date);
   }
 }

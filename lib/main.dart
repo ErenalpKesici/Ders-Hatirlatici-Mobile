@@ -11,6 +11,7 @@ import 'package:excel/excel.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
+import 'Alarm.dart';
 import 'Single.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_archive/flutter_archive.dart';
@@ -22,6 +23,7 @@ const String XL_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/r
 const String UPDATE_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/Update.txt";
 String? selectedDirectory;
 List<Single> s = new List<Single>.empty(growable: true);
+List<Alarm> alarms = new List<Alarm>.empty(growable: true);
 int tillCancel = 0;
 bool upToDate = false;
 Backup save = new Backup.initial();
@@ -88,6 +90,10 @@ Future<void> readExcel() async{
   }
   s.sort((a, b) => a.date.compareTo(b.date));
   runApp(MyApp());
+}
+String displayDate(DateTime date){
+  String minute = date.minute < 10?"0"+date.minute.toString():date.minute.toString();
+  return date.year.toString() +"-"+date.month.toString() +"-"+date.day.toString() +" "+date.hour.toString() +":"+ minute;
 }
 List<String> individualize(String type){
   if(type == "lecturers"){
@@ -177,9 +183,9 @@ Future<bool> internetConnectivity() async {
 }
 ReceivePort _port = ReceivePort();
 void downloadCallback(String id, DownloadTaskStatus status, int progress) async{
-    final SendPort? send = IsolateNameServer.lookupPortByName('downloader_send_port');
-    send!.send([id, status, progress]);
-  }
+  final SendPort? send = IsolateNameServer.lookupPortByName('downloader_send_port');
+  send!.send([id, status, progress]);
+}
 void download() async{
   FlutterDownloader.registerCallback(downloadCallback);
   IsolateNameServer.registerPortWithName(_port.sendPort, 'downloader_send_port');
@@ -208,6 +214,7 @@ void download() async{
     savedDir: externalDir!.path,
   );
 }
+
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterDownloader.initialize(debug: true);
@@ -217,28 +224,27 @@ void main() async{
     if(await File(externalDir.path+"/Save.json").exists()){ //read from save.json
       Map<String, dynamic> readSave = Map<String, dynamic>.from(jsonDecode(File(externalDir.path+"/Save.json").readAsStringSync()));
       readSave.forEach((key, value) {
-        switch(key){
-          case "lecturer":
-            save.lecturer = value;
-            break;
-          case "course":
-            save.course = value;
-            break;
-          case "topic":
-            save.topic = value;
-            break;
-          case "type":
-            save.type = value;
-            break;
-          case "time":
-            save.time = value;
-            break;
-          case "timeType":
-            save.timeType = value;
-            break;
-        }
+        save.placeValue(key, value);
       });
       print(save.toString());
+      List<String> alarmsRead = save.alarms!.split('*');
+      alarmsRead.removeLast();
+      for(String alarm in alarmsRead){
+        int id = int.parse(alarm.split('~')[0]);
+        alarm = alarm.split('~')[1];
+        List<String> currAlarm = alarm.split('& ');
+        String date = currAlarm[4].split(' - ')[0];
+        String time = currAlarm[4].split(' ')[1];
+        Single tmpS = Single(DateTime(int.parse(date.split('-')[0]), int.parse(date.split('-')[1]), int.parse(date.split('-')[2].split(' ')[0]), int.parse(time.split(':')[0]), int.parse(time.split(':')[1])), currAlarm[0], currAlarm[1], currAlarm[2], currAlarm[3]);
+        int till = tmpS.date.difference(DateTime.now()).inSeconds;
+        print(till);
+        if(till > -1){
+          notifications.scheduleNotify(till, id, tmpS, tmpS);
+          save.alarms = save.alarms! + id.toString()+"~"+tmpS.toSave()+"*";
+        }
+        alarms.add(Alarm(alarms.length, tmpS));
+      }
+      alarms.sort((a, b) => a.single.date.compareTo(b.single.date)); 
     }
     Timer.periodic(Duration(seconds: 2), (timer) async{ 
       if (await InternetConnectionChecker().hasConnection){  
@@ -309,11 +315,23 @@ Widget getSideBar(BuildContext context){
             },
           ),
           ListTile(
+            leading: Icon(Icons.alarm_sharp),
+            title: Text("Hatırlatıcılar Listesi", textAlign: TextAlign.center,),
+            onTap: (){
+              print(save.toString());
+              if(context.widget.toString() != "ListAlarmsSend")
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListAlarmsSend()));
+              else
+                Navigator.of(context).pop();
+            },
+          ),
+          ListTile(
             leading: Icon(Icons.settings),
             title: Text("Ayarlar", textAlign: TextAlign.center,),
             onTap: (){
+              print(save.toString());
               if(context.widget.toString() != "SettingsSend")
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) =>SettingsSend()));
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) =>SettingsSend(save: save)));
               else
                 Navigator.of(context).pop();
             },
@@ -345,10 +363,23 @@ Future<List<String>> readCourses() async{
   return courses;
 }
 
+void saveSelections(Backup save)async{
+  final externalDir = await getExternalStorageDirectory();
+  if(!await File(externalDir!.path + "/Save.json").exists())
+    await File(externalDir.path + "/Save.json").create();
+  File(externalDir.path + "/Save.json").writeAsString(jsonEncode(save));
+}
+void updateAlarms(Alarm alarm){
+  alarms.add(alarm);
+  alarms.sort((a, b) => a.single.date.compareTo(b.single.date)); 
+  save.alarms = save.alarms! + alarm.id.toString()+"~"+alarm.single.toSave()+"*";
+  saveSelections(save);
+}
+
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   DateTime selectedDate1 = DateTime.now();
   DateTime selectedDate2 = DateTime.now();
-  bool dt2Checked = true;
+  bool dt2Checked = true, remindClosest = false, remindDate = false;
   int? selectedRadio = 0;
   TextEditingController timeBefore = new TextEditingController(text: save.time);
   Icon alarmIcon = Icon(Icons.alarm_off);
@@ -382,16 +413,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   bool validSingle(Single single){
     return (save.lecturer == "Tüm Eğiticiler" || single.lecturer == save.lecturer) && (save.course == "Tüm Sınıflar" || save.course == single.course) && (save.topic == "Tüm Konular" || save.topic == single.topic) && (save.type == "Tüm Tipler" || save.type == single.type);
   }
-  void saveSelections(Backup save)async{
-    final externalDir = await getExternalStorageDirectory();
-    if(!await File(externalDir!.path + "/Save.json").exists())
-      await File(externalDir.path + "/Save.json").create();
-    File(externalDir.path + "/Save.json").writeAsString(jsonEncode(save));
-  }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state)  async{
     if(state == AppLifecycleState.paused)
-      saveSelections(new Backup(save.lecturer, save.course, save.topic, save.type, save.time, save.timeType));
+      saveSelections(save);
   }
   @override
   Widget build(BuildContext context) {
@@ -592,19 +617,15 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Row(
-                                  mainAxisAlignment:MainAxisAlignment.center,
-                                  children: [
-                                    Text("Aralıklı tarih seçme", style: TextStyle(fontSize: 16),),
-                                    Checkbox(
-                                      value: dt2Checked, 
-                                      onChanged: (value){
-                                        setState(() {
-                                          dt2Checked = value!;                      
-                                        });
-                                      }
-                                    ),
-                                  ],
+                                CheckboxListTile(
+                                  contentPadding: EdgeInsets.fromLTRB(64, 0, 64, 0),
+                                  title: Text("Aralıklı tarih seçme"),
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      dt2Checked = value!;
+                                    });
+                                  },
+                                  value: dt2Checked,
                                 ),
                                 SizedBox(height: 20),
                                 Row(
@@ -643,13 +664,13 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   if(toSendS.length > 0){
                                     String lecturer = "", course = "", topic = "", type = "";
                                     if(save.lecturer != "Tüm Eğiticiler") 
-                                      lecturer = ", " + save.lecturer;
+                                      lecturer = ", " + save.lecturer!;
                                     if(save.course != "Tüm Sınıflar") 
-                                      course = ", " + save.course;
+                                      course = ", " + save.course!;
                                     if(save.topic != "Tüm Konular") 
-                                      topic = ", " + save.topic.substring(0, 15) + (save.topic.length > 15?"...":"");
+                                      topic = ", " + save.topic!.substring(0, 15) + (save.topic!.length > 15?"...":"");
                                     if(save.type != "Tüm Tipler")
-                                      type = ", " + save.type;
+                                      type = ", " + save.type!;
                                     String toSendTitle = DateFormat('dd/MM/yyyy').format(selectedDate1) + " - " + DateFormat('dd/MM/yyyy').format(selectedDate2) + lecturer + course + topic + type;
                                     Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: toSendTitle,)));
                                   }
@@ -709,81 +730,125 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   }, icon: Icon(Icons.find_in_page_rounded), label: Text('Dersi Bul'),),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 50, 0, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 40,
-                      child: TextField(
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(hintText: "10", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
-                        controller: timeBefore,
-                        textAlign: TextAlign.center,
+              Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 40,
+                        child: TextField(
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(hintText: "10", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
+                          controller: timeBefore,
+                          textAlign: TextAlign.center,
                         ),
-                    ),
-                    SizedBox(width: 10,),
-                    DropdownButton<String>(
-                      alignment: AlignmentDirectional.center,
-                      value: save.timeType,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                        save.timeType = newValue!;
-                        });
-                      },
-                      items: <String>['Dakika', 'Saat', 'Gün'].map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
+                      ),
+                      SizedBox(width: 10,),
+                      DropdownButton<String>(
                         alignment: AlignmentDirectional.center,
-                        value: value,
-                        child: Text(value),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(width: 10,),
-                    ElevatedButton.icon(onPressed: (){
-                      save.time = timeBefore.text;
+                        value: save.timeType,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            save.timeType = newValue!;
+                          });
+                            saveSelections(save);
+                        },
+                        items: <String>['Dakika', 'Saat', 'Gün'].map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            alignment: AlignmentDirectional.center,
+                            value: value,
+                            child: Text(value),
+                            onTap: (){
+                              saveSelections(save);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      SizedBox(width: 10,),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text("Kalınca", style: TextStyle(fontSize: 18)),
+                  ),
+                  ElevatedButton.icon(
+                    label: Text("En Yakın Dersi Hatırlat"),
+                    icon: Icon(Icons.timelapse),
+                    onPressed: () {
                       bool foundSingle = false;
                       for(Single single in s){
-                          DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
-                          DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
-                          if(validSingle(single) && singleDt.compareTo(nowDate) == 1){                    
-                            int difference = single.date.difference(DateTime.now()).inSeconds;
-                            int multiplier = 0;
-                            switch(save.timeType){
-                              case "Dakika":
-                                multiplier = 60;
-                                break;
-                              case "Saat":
-                                multiplier = 3600;
-                                break;
-                              case "Gün":
-                                multiplier = 86400;
-                                break;
-                            }
-                            print(difference.toString() +" " + (int.parse(timeBefore.value.text)*multiplier).toString());
-                            if(difference - int.parse(timeBefore.value.text)*multiplier < 0)continue;
-                            tillCancel = difference - int.parse(timeBefore.value.text)*multiplier;
-                            notifications.scheduleNotify(tillCancel, single);
-                            FocusScope.of(context).unfocus();
-                            ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('En yakın derse ' + (tillCancel/60).ceil().toString() +  ' dakika içinde hatırlatılıcaksınız.', textAlign: TextAlign.center)));
-                            // FlutterBackgroundService.initialize(onStart);
-                            setState(() {
-                              alarmIcon = Icon(Icons.alarm_on);
-                            });
-                            foundSingle = true;
-                            break;
+                        DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
+                        DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
+                        if(validSingle(single) && singleDt.compareTo(nowDate) == 1){                    
+                          int difference = single.date.difference(DateTime.now()).inSeconds;
+                          int multiplier = 0;
+                          switch(save.timeType){
+                            case "Dakika":
+                              multiplier = 60;
+                              break;
+                            case "Saat":
+                              multiplier = 3600;
+                              break;
+                            case "Gün":
+                              multiplier = 86400;
+                              break;
                           }
+                          print(difference.toString() +" " + (int.parse(timeBefore.value.text)*multiplier).toString());
+                          if(difference - int.parse(timeBefore.value.text)*multiplier < 0)
+                            continue;
+                          tillCancel = difference - int.parse(timeBefore.value.text)*multiplier;
+                          FocusScope.of(context).unfocus();
+                          ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('En yakın derse ' + (tillCancel/60).ceil().toString() +  ' dakika içinde hatırlatılıcaksınız.', textAlign: TextAlign.center)));
+                          int tillMin = (tillCancel/60).round();
+                          Single tmpSingle = Single(DateTime.now().add(Duration(minutes: tillMin)), single.course, single.lecturer, single.topic, single.type);
+                          Alarm alarm = Alarm(alarms.length, tmpSingle); 
+                          notifications.scheduleNotify(tillCancel, alarm.id, tmpSingle, single);
+                          updateAlarms(alarm);
+                          // FlutterBackgroundService.initialize(onStart);
+                          setState(() {
+                            alarmIcon = Icon(Icons.alarm_on);
+                          });
+                          foundSingle = true;
+                          break;
+                        }
                       }
-                      if(!foundSingle)
-                      ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Seçilenlere göre yakında bir ders bulunamadı.', textAlign: TextAlign.center)));
-                    }, icon: alarmIcon, label: Text('Kalınca Hatırlat')),
-                  ],
-                ),
+                      if(!foundSingle){
+                        setState(() {
+                          remindClosest = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Seçilenlere göre yakında bir ders bulunamadı.', textAlign: TextAlign.center)));
+                      }
+                    },
+                  ),
+                  SizedBox(height: 10,),
+                  ElevatedButton.icon(onPressed: () async{
+                    save.time = timeBefore.text;
+                    print(save.toString());
+                    saveSelections(save);
+                    final DateTime? pickedDate = await showDatePicker(
+                      helpText: "Tarih Seçin:",
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2050),
+                    );
+                    if(pickedDate != null){
+                      List<Single> toSendS = List.empty(growable: true);
+                      for(Single single in s){
+                        DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day);
+                        DateTime selectedDt = new DateTime(pickedDate.year, pickedDate.month, pickedDate.day);
+                        if(validSingle(single) && (singleDt.compareTo(selectedDt) == 0))
+                          toSendS.add(single);
+                      }
+                      Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: 'Hatırlatılıcak Ders Seçme',)));
+                    }
+                  }, icon: Icon(Icons.date_range), label: Text('Tarihdeki Dersleri Hatırlat')),
+                ],
               ),
-                    ],
+              ],
                   ),
                       ),
                 ),
@@ -793,6 +858,72 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+class ListAlarmsSend extends StatefulWidget {  
+  ListAlarmsSend();
+  @override
+  State<StatefulWidget> createState() {
+    return ListAlarms();
+  }
+}
+class ListAlarms extends State<ListAlarmsSend> {
+  ListAlarms();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Hatırlatıcılar"), centerTitle: true, 
+      actions: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Row(children: [Container(width: 10, height: 10, color: Colors.red), Text(' Kaçırılanlar' , style: TextStyle(fontSize: 12),)]),
+              SizedBox(height: 5,),
+              Row(children: [Container(width: 10, height: 10, color: Colors.green), Text(' Gelecektekiler', style: TextStyle(fontSize: 12),)]),
+            ],
+          ),
+        )
+      ]
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columnSpacing: 10,
+          sortColumnIndex: 1,
+          columns: [
+            DataColumn(label: Text('')),
+            DataColumn(label: Text('Tarih')),
+            DataColumn(label: Text('Ders')),
+            DataColumn(label: Text('Konu')),
+            DataColumn(label: Text('Eğitici')),
+          ],
+          rows: alarms.map<DataRow>((e) => DataRow(
+            color: MaterialStateColor.resolveWith((states) => e.single.date.compareTo(DateTime.now())==1?Colors.green:Colors.red),
+            cells: [
+              DataCell(ElevatedButton.icon(onPressed: (){
+                List<Alarm> nAlarms = List.empty(growable: true);
+                save.alarms = "";
+                for(Alarm alarm in alarms){
+                  if(alarm != e)
+                    nAlarms.add(alarm);
+                  save.alarms = save.alarms! + alarm.id.toString()+"~"+alarm.single.toSave()+"*";
+                }
+                setState(() {
+                  alarms = nAlarms;
+                });
+                alarms.sort((a, b) => a.single.date.compareTo(b.single.date)); 
+                notifications.cancelNotifications(e.id);
+              }, style: ElevatedButton.styleFrom(elevation: 0, primary: Colors.transparent), icon: Icon(Icons.delete), label: Text(''))),
+              DataCell(Text(displayDate(e.single.date), textAlign: TextAlign.center,)),
+              DataCell(Text(e.single.course, textAlign: TextAlign.center,)),
+              DataCell(Container(width:100, child: Text(e.single.topic, textAlign: TextAlign.center, overflow: TextOverflow.fade)),),
+              DataCell(Text(e.single.lecturer, textAlign: TextAlign.center, overflow: TextOverflow.fade),),
+            ]
+          )).toList(),
         ),
       ),
     );
@@ -810,8 +941,13 @@ class ListPageSend extends StatefulWidget {
 class ListPage extends State<ListPageSend> {
   List<Single>? currentS;
   String? title;
+  List<Icon>? icons;
   ListPage(this.currentS, this.title);
-
+  @override
+  void initState() {
+    icons = List.filled(currentS!.length, Icon(Icons.alarm_add, color: Colors.lightGreenAccent));
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -829,6 +965,8 @@ class ListPage extends State<ListPageSend> {
               columnSpacing: 10,
               headingRowColor: MaterialStateColor.resolveWith((states) => Colors.black12),
               columns: [
+                if(title == 'Hatırlatılıcak Ders Seçme')
+                  DataColumn(label: Text('')),
                 DataColumn(label: Text('Tarih')),
                 if(save.course == "Tüm Sınıflar")
                   DataColumn(label: Text('Sınıf')),
@@ -848,8 +986,47 @@ class ListPage extends State<ListPageSend> {
   }
   DataRow getDataRow(index) {
     return DataRow(
-      color: MaterialStateColor.resolveWith((states) => currentS![index].type == "UE"?Colors.orange[700]!:Colors.lightBlue[700]!),
+      color: !save.listColored!?MaterialStateColor.resolveWith((states) => Colors.transparent):MaterialStateColor.resolveWith((states) => currentS![index].type == "UE"?Colors.orange[700]!:Colors.lightBlue[700]!),
       cells: <DataCell>[
+        if(title == 'Hatırlatılıcak Ders Seçme')
+          DataCell(ElevatedButton.icon(onPressed: (){
+            if(icons?[index].icon == Icons.alarm_on){
+              // notifications.cancelNotifications();
+              setState(() {
+                icons?[index] = Icon(Icons.alarm_add, color: Colors.lightGreenAccent);
+              });
+              return;
+            }
+            if(currentS![index].date.compareTo(DateTime.now()) == 1){    
+              int difference = currentS![index].date.difference(DateTime.now()).inSeconds;
+              int multiplier = 0;
+              switch(save.timeType){
+                case "Dakika":
+                  multiplier = 60;
+                  break;
+                case "Saat":
+                  multiplier = 3600;
+                  break;
+                case "Gün":
+                  multiplier = 86400;
+                  break;
+              }
+             tillCancel = difference - int.parse(save.time!)*multiplier;
+             if(tillCancel < 1)
+               ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders seçilen süreden önce başlıyacak, daha erken süre seçin.', textAlign: TextAlign.center)));
+             else{
+               ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Derse ' + (tillCancel/60).ceil().toString() +  ' dakika içinde hatırlatılıcaksınız.', textAlign: TextAlign.center)));
+               setState(() {
+                 icons?[index] = Icon(Icons.alarm_on, color: Colors.lightGreenAccent);
+               });
+               int tillMin = (tillCancel/60).round();
+               Single tmpSingle = Single(DateTime.now().add(Duration(minutes: tillMin)), currentS![index].course, currentS![index].lecturer, currentS![index].topic, currentS![index].type);
+               Alarm alarm = Alarm(alarms.length, tmpSingle);
+               notifications.scheduleNotify(tillCancel, alarm.id, tmpSingle, currentS![index]);
+               updateAlarms(alarm);
+             }
+            }
+          }, style: ElevatedButton.styleFrom(primary: Colors.transparent, elevation: 0), icon: currentS![index].date.compareTo(DateTime.now()) != 1?Icon(Icons.alarm_add, color: Colors.grey,):icons![index], label: Text('')) ),
         DataCell(Text(currentS![index].date.day.toString() + "/" + currentS![index].date.month.toString() + "/" + currentS![index].date.year.toString() +" - " + currentS![index].date.hour.toString()+":00")),
         if(save.course == "Tüm Sınıflar")
           DataCell(Text(currentS![index].course)),
