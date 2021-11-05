@@ -12,12 +12,9 @@ class MyNotifications{
     print("IN: " + (inSeconds/60).toString() +" and " + alarmified.toSave() +" or: " + original.toSave());
     Future.delayed(Duration(seconds: inSeconds), (){
       List<Alarm> nAlarms = List.empty(growable: true);
-      for(Alarm alarm in alarms){
-        print(alarm.single.toSave() +" != " +alarmified.toSave());
-        if(alarm.single.toSave() != alarmified.toSave()){
+      for(Alarm alarm in alarms)
+        if(alarm.single.toSave() != alarmified.toSave())
           nAlarms.add(alarm);
-        }
-      }
       alarms = nAlarms;
     });
     tz.initializeTimeZones();
