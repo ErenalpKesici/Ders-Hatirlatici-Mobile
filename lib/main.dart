@@ -20,6 +20,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 
 //test
 const String XL_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/xl.zip";
@@ -235,7 +236,6 @@ void onStart() {
       service.stopBackgroundService();
     }
   });
-
         // bring to foreground
         // service.setForegroundMode(true);
         // Timer.periodic(Duration(seconds: 1), (timer) async {
@@ -250,10 +250,78 @@ void onStart() {
         //   );
         // });
 }
+DateTime stringToDate(String strDate){
+  String date = strDate.split(' ')[0];
+  String time = strDate.split(' ')[1];
+  List<String> dates = date.split('-');
+  int year = int.parse(dates[0]);
+  int month = int.parse(dates[1]);
+  int day = int.parse(dates[2]);
+  List<String> times = time.split(':');
+  int hour = int.parse(times[0]);
+  int minute = int.parse(times[1]);
+  return DateTime(year, month, day, hour, minute);
+}
 void main() async{
   await WidgetsFlutterBinding.ensureInitialized();
   await FlutterBackgroundService.initialize(onStart);
   await FlutterDownloader.initialize(debug: true);
+  AwesomeNotifications().actionStream.listen((event) async{
+    print('Event received: ' + event.toMap().toString());
+    if(event.buttonKeyPressed == 'btnDelay'){
+      String strLeft = event.title!.split(' ')[0];
+      bool valid = true;
+      try{
+        int.parse(strLeft);
+      }catch(e){
+        valid = false;
+      }
+      String title = '';
+      if(valid){
+        List<String> tmp = event.body!.split(' ');
+        String hour = tmp.last;
+        tmp.removeLast();
+        String date = tmp.last;
+        DateTime dateTime = stringToDate(date+" " +hour);
+        int minutesLeft = dateTime.difference(DateTime.now()).inMinutes;
+        if(minutesLeft < 0) 
+          return;
+        title = minutesLeft.toString() + " dakika içinde başlıyacak ders: ";
+      }
+      else{
+        title = "Yakında başlıyacak ders: ";
+      }
+      AwesomeNotifications().createNotification(
+        schedule: NotificationInterval(interval: int.parse(save.delay!) * 60, timeZone: await AwesomeNotifications().getLocalTimeZoneIdentifier(), repeats: false),
+        actionButtons: [
+          NotificationActionButton(key: 'btnOk', label: 'Tamam', buttonType: ActionButtonType.KeepOnTop),
+          NotificationActionButton(key: 'btnDelay', label: 'Ertele', buttonType: ActionButtonType.KeepOnTop),
+        ],
+        content: NotificationContent(
+          id: event.id!,
+          channelKey: 'basic_channel',
+          title: title,
+          body: event.body,
+          notificationLayout: NotificationLayout.BigText
+        )
+      );
+    }
+  });
+  AwesomeNotifications().initialize(
+    'resource://raw/notification',
+    [
+      NotificationChannel(
+          channelKey: 'basic_channel',
+          channelName: 'Basic notifications',
+          channelDescription: 'Notification channel for basic tests',
+          defaultColor: Colors.orange,
+          enableLights: true,
+          ledColor: Colors.red,
+          soundSource: 'resource://raw/alarm',
+          importance: NotificationImportance.Max,
+      )
+    ]
+  );
   if(await Permission.storage.request().isGranted){
     final externalDir = await getExternalStorageDirectory();
     selectedDirectory = externalDir!.path +"/xl";
@@ -457,7 +525,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   DateTime selectedDate2 = DateTime.now();
   bool dt2Checked = true, remindClosest = false, remindDate = false;
   int? selectedRadio = 0;
-  TextEditingController timeBefore = new TextEditingController(text: save.time);
+  TextEditingController timeBeforeController = new TextEditingController(text: save.time);
   Icon alarmIcon = Icon(Icons.alarm_off);
   Future<List<Single>>? loadLecturers, loadCourses, loadTopics;
   GestureDetector? gdDate1, gdDate2;
@@ -819,7 +887,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         child: TextField(
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(hintText: "10", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
-                          controller: timeBefore,
+                          controller: timeBeforeController,
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -873,10 +941,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                               multiplier = 86400;
                               break;
                           }
-                          print(difference.toString() +" " + (int.parse(timeBefore.value.text)*multiplier).toString());
-                          if(difference - int.parse(timeBefore.value.text)*multiplier < 0)
+                          print(difference.toString() +" " + (int.parse(timeBeforeController.value.text)*multiplier).toString());
+                          if(difference - int.parse(timeBeforeController.value.text)*multiplier < 0)
                             continue;
-                          tillCancel = difference - int.parse(timeBefore.value.text)*multiplier;
+                          tillCancel = difference - int.parse(timeBeforeController.value.text)*multiplier;
                           FocusScope.of(context).unfocus();
                           ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('En yakın derse ' + (tillCancel/60).ceil().toString() +  ' dakika içinde hatırlatılıcaksınız.', textAlign: TextAlign.center)));
                           int tillMin = (tillCancel/60).round();
@@ -901,7 +969,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   ),
                   SizedBox(height: 10,),
                   ElevatedButton.icon(onPressed: () async{
-                    save.time = timeBefore.text;
+                    save.time = timeBeforeController.text;
                     print(save.toString());
                     saveSelections(save);
                     final DateTime? pickedDate = await showDatePicker(

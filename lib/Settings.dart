@@ -13,9 +13,11 @@ class SettingsSend extends StatefulWidget {
 }
 class Settings extends State<SettingsSend> {
   Backup? save;
+  TextEditingController? delayController;
   Settings(this.save);
   @override
   Widget build(BuildContext context) {
+    delayController = TextEditingController(text: save?.delay);
     return Scaffold(
       drawer: getSideBar(context),
       appBar: AppBar(title: Text("Ayarlar"), centerTitle: true,),
@@ -23,6 +25,18 @@ class Settings extends State<SettingsSend> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              onChanged: (String value){
+                save?.delay = value;
+              },
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'Erteleme süresi (dakika)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), hintText: "5", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
+              controller: delayController,
+              textAlign: TextAlign.center,
+            ),
+          ),
           CheckboxListTile(
             title: Text("Listelerken tipe göre renklendir"),
             onChanged: (bool? value) {

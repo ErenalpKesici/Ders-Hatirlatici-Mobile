@@ -1,5 +1,5 @@
 class Backup{
-  String? lecturer, course, topic, type, time, timeType, alarms;
+  String? lecturer, course, topic, type, time, timeType, alarms, delay;
   bool? cancelAlarm, listColored;
   Backup.initial(){
     lecturer = "Tüm Eğiticiler";
@@ -11,8 +11,9 @@ class Backup{
     cancelAlarm = false;
     listColored = false;
     alarms = '';
+    delay = '5';
   }
-  Backup(this.lecturer, this.course, this.topic, this.type, this.time, this.timeType, this.cancelAlarm, this.listColored, this.alarms);
+  Backup(this.lecturer, this.course, this.topic, this.type, this.time, this.timeType, this.cancelAlarm, this.listColored, this.alarms, this.delay);
   Backup.fromJson(Map<String, dynamic> json):
     lecturer = json['lecturer'],
     course = json['course'],
@@ -22,7 +23,8 @@ class Backup{
     timeType = json['timeType'],
     cancelAlarm = json['cancelAlarm'],
     listColored = json['listColored'],
-    alarms = json['alarms'];    
+    alarms = json['alarms'],    
+    delay = json['delay'];
   Map<String, dynamic> toJson() {
     return {
       'lecturer': lecturer,
@@ -33,7 +35,8 @@ class Backup{
       'timeType': timeType,
       'cancelAlarm': cancelAlarm,
       'listColored': listColored,
-      'alarms': alarms
+      'alarms': alarms,
+      'delay': delay,
     };
   }
   void placeValue(String key, var value){
@@ -66,10 +69,13 @@ class Backup{
       case "alarms":
         this.alarms = value;
         break;
+      case "delay":
+        this.delay = value;
+        break;
     }
   }
   @override
   String toString() {
-    return this.lecturer! + " " + this.topic! + " " +  this.course! + " "  + this.type! + " " + this.time! + " " + this.timeType! + " " + this.cancelAlarm.toString() + " " + this.listColored.toString();
+    return this.lecturer! + " " + this.topic! + " " +  this.course! + " "  + this.type! + " " + this.time! + " " + this.timeType! + " " + this.cancelAlarm.toString() + " " + this.listColored.toString()+" " + this.delay!;
   }
 }
