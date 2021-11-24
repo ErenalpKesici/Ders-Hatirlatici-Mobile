@@ -22,6 +22,10 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+
 //test
 const String XL_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/xl.zip";
 const String UPDATE_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/Update.txt";
@@ -93,6 +97,11 @@ Future<void> readExcel() async{
     }
   }
   s.sort((a, b) => a.date.compareTo(b.date));
+  await Firebase.initializeApp();
+  CollectionReference courses = FirebaseFirestore.instance.collection('courses');
+  for(int i=0;i<s.length;i++){
+    courses.doc(i.toString()).set({'course': s[i].course, 'lecturer': s[i].lecturer, 'topic': s[i].topic, 'type': s[i].type, 'date': s[i].date,});
+  }
   runApp(MyApp());
   
 }
