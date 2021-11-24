@@ -100,7 +100,7 @@ Future<void> readExcel() async{
   await Firebase.initializeApp();
   CollectionReference courses = FirebaseFirestore.instance.collection('courses');
   for(int i=0;i<s.length;i++){
-    courses.doc(i.toString()).set({'course': s[i].course, 'lecturer': s[i].lecturer, 'topic': s[i].topic, 'type': s[i].type, 'date': s[i].date,});
+    courses.doc(i.toString()).set({'course': s[i].course, 'lecturer': s[i].lecturer, 'topic': s[i].topic, 'type': s[i].type, 'date': s[i].date.day.toString()+"/"+s[i].date.month.toString()+"/"+s[i].date.year.toString()+" "+ s[i].date.hour.toString(),});
   }
   runApp(MyApp());
   
@@ -275,6 +275,11 @@ void main() async{
   await WidgetsFlutterBinding.ensureInitialized();
   await FlutterBackgroundService.initialize(onStart);
   await FlutterDownloader.initialize(debug: true);
+  await Firebase.initializeApp();
+  //  CollectionReference courses = FirebaseFirestore.instance.collection('courses');
+  //  var document = await courses.doc("0").get();
+  //  print(document.get('type'));
+   
   AwesomeNotifications().actionStream.listen((event) async{
     print('Event received: ' + event.toMap().toString());
     if(event.buttonKeyPressed == 'btnDelay'){

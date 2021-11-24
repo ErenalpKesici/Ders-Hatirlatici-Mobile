@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "372854706083",
+    "project_id": "ders-hatirlatici-web",
+    "storage_bucket": "ders-hatirlatici-web.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:372854706083:android:b9722d5c2c69b72f381416",
+        "android_client_info": {
+          "package_name": "com.example.ders_hatirlatici"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "372854706083-8ntl070o7l647peg64rrqg2jkj2bp9bs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA15AYpNx-9W76SdDj_W7NTwVbiuKEBRLQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "372854706083-8ntl070o7l647peg64rrqg2jkj2bp9bs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
