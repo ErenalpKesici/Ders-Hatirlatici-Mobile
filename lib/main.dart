@@ -19,7 +19,6 @@ import 'package:flutter_archive/flutter_archive.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 
 //test
@@ -219,37 +218,7 @@ void download() async{
     savedDir: externalDir!.path,
   );
 }
-void onStart() {
-  WidgetsFlutterBinding.ensureInitialized();
-  final service = FlutterBackgroundService();
-  service.setAutoStartOnBootMode(true);
-  service.setNotificationInfo(title: 'Ders Hatırlatıcı ', content: "Arka planda çalışıyor.");
-  service.onDataReceived.listen((event) {
-    if (event!["action"] == "setAsForeground") {
-      service.setForegroundMode(true);
-      return;
-    }
-    if (event["action"] == "setAsBackground") {
-      service.setForegroundMode(false);
-    }
-    if (event["action"] == "stopService") {
-      service.stopBackgroundService();
-    }
-  });
-        // bring to foreground
-        // service.setForegroundMode(true);
-        // Timer.periodic(Duration(seconds: 1), (timer) async {
-        //   if (!(await service.isServiceRunning())) timer.cancel();
-        //   service.setNotificationInfo(
-        //     title: "My App Service",
-        //     content: "Updated at ${DateTime.now()}",
-        //   );
 
-        //   service.sendData(
-        //     {"current_date": DateTime.now().toIso8601String()},
-        //   );
-        // });
-}
 DateTime stringToDate(String strDate){
   String date = strDate.split(' ')[0];
   String time = strDate.split(' ')[1];
@@ -264,7 +233,6 @@ DateTime stringToDate(String strDate){
 }
 void main() async{
   await WidgetsFlutterBinding.ensureInitialized();
-  await FlutterBackgroundService.initialize(onStart);
   await FlutterDownloader.initialize(debug: true);
   AwesomeNotifications().actionStream.listen((event) async{
     print('Event received: ' + event.toMap().toString());
@@ -445,39 +413,6 @@ Widget getSideBar(BuildContext context){
               }
               else
                 Navigator.of(context).pop();
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.close),
-            title: Text("Uygulamayı Kapat", textAlign: TextAlign.center,),
-            onTap: () {
-              showDialog<bool>(
-                context: context,
-                builder: (c) =>
-              AlertDialog(
-                  title: Center(child: Text('Onayla')),
-                  content: Text('Uygulamayı tamamen kapatmak istediğinizden emin misiniz?'),
-                  actions: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          child: Text('Hayır'),
-                          onPressed: () => Navigator.pop(context, false),
-                        ),
-                        SizedBox(width: 10,),
-                        ElevatedButton(
-                          child: Text('Evet'),
-                          onPressed: () async{
-                            FlutterBackgroundService().sendData({"action": "stopService"});
-                            await Future.doWhile(() => FlutterBackgroundService().isServiceRunning());
-                            exit(0);
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ));
             },
           ),
         ],

@@ -32,7 +32,6 @@ dependencies:
   firebase_auth: ^3.0.1
 
   flutter_local_notifications: ^8.2.0
-  flutter_background_service: ^0.1.5
   path_provider: ^2.0.5
   flutter_downloader: ^1.7.1
   flutter_archive: ^4.0.1
