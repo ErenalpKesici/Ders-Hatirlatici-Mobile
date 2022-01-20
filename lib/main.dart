@@ -581,9 +581,34 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         centerTitle: true,
         actions: [
           ElevatedButton.icon(onPressed: (){
-            setState(() {
-              save = new Backup.initial();
-            });
+            showDialog<bool>(
+              context: context,
+              builder: (c) =>
+              AlertDialog(
+                title: Center(child: Text('Onayla')),
+                content: Text('Filtreleleri sifirlamak istediğinize emin misiniz?'),
+                actions: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        child: Text('Hayır'),
+                        onPressed: () => Navigator.pop(context, false),
+                      ),
+                      SizedBox(width: 10,),
+                      ElevatedButton(
+                        child: Text('Evet'),
+                        onPressed: () async{
+                          Navigator.pop(context, false);     
+                        setState(() {
+                            save = new Backup.initial();
+                        });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ));
           }, icon: Icon(Icons.restore), label: Text("Geri Al"), )
         ],
       ),
