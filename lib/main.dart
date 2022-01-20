@@ -404,6 +404,18 @@ Widget getSideBar(BuildContext context){
             },
           ),
           ListTile(
+            leading: Icon(Icons.calculate),
+            title: Text("Ders Sayısı Hesaplama", textAlign: TextAlign.center,),
+            onTap: (){
+              if(context.widget.toString() != "CourseCalculatorPageSend"){
+                Navigator.of(context).pop();
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) =>CourseCalculatorPageSend()));
+              }
+              else
+                Navigator.of(context).pop();
+            },
+          ),
+          ListTile(
             leading: Icon(Icons.settings),
             title: Text("Ayarlar", textAlign: TextAlign.center,),
             onTap: (){
