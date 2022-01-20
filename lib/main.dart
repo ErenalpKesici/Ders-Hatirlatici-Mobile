@@ -1056,10 +1056,27 @@ class ListPage extends State<ListPageSend> {
   String? title;
   List<Icon>? icons;
   ListPage(this.currentS, this.title);
+  StreamSubscription? accelerometer;
+  bool landscape = false;
+  bool left = true;
   @override
   void initState() {
     icons = List.filled(currentS!.length, Icon(Icons.alarm_add, color: Colors.lightGreenAccent));
+    accelerometer = accelerometerEvents.listen((AccelerometerEvent  event) {
+      setState(() {
+        if(event.y < 5)landscape=true;
+        else landscape = false;
+        if(event.x < 0)left = true;
+        else left = false;
+      });
+    });
     super.initState();
+  }
+    @override
+  void dispose() {
+    super.dispose();
+    accelerometer!.cancel();
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp,DeviceOrientation.portraitDown,]);
   }
   void setAlarm(int index){
     if(currentS![index].date.compareTo(DateTime.now()) == 1){    
@@ -1094,18 +1111,25 @@ class ListPage extends State<ListPageSend> {
   }
   @override
   Widget build(BuildContext context) {
+    if(!landscape){  
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp,DeviceOrientation.portraitDown,]);
+    }
+    else{
+      SystemChrome.setPreferredOrientations([left==true?DeviceOrientation.landscapeRight:DeviceOrientation.landscapeLeft]);
+    }
     return Scaffold(
       appBar: AppBar(
         title: FittedBox(child: Text(this.title!)),
         centerTitle: true,
       ),
-      body: Scrollbar(
-        isAlwaysShown: true,
+      body: Container(
+        width: MediaQuery.of(context).size.width,
         child: SingleChildScrollView(
           scrollDirection: Axis.vertical,
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
+              decoration: BoxDecoration(),
               columnSpacing: 10,
               headingRowColor: MaterialStateColor.resolveWith((states) => Colors.black12),
               columns: [
