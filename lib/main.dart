@@ -20,6 +20,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:http/http.dart' as http;
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 //test
 const String XL_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/xl.zip";
