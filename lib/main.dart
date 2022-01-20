@@ -22,12 +22,15 @@ import 'package:http/http.dart' as http;
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
+import 'course_calculator.dart';
+
 //test
 const String XL_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/xl.zip";
 const String UPDATE_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/Update.txt";
 String? selectedDirectory;
 List<Single> s = new List<Single>.empty(growable: true);
 List<Alarm> alarms = new List<Alarm>.empty(growable: true);
+List<String> uniqueLecturers = List.empty(growable: true), uniqueTypes = List.empty(growable: true);
 int tillCancel = 0;
 bool upToDate = false;
 Backup save = new Backup.initial();
@@ -391,6 +394,18 @@ Widget getSideBar(BuildContext context){
             },
           ),
           ListTile(
+            leading: Icon(Icons.calculate),
+            title: Text("Ders Sayısı Hesaplama", textAlign: TextAlign.center,),
+            onTap: (){
+              if(context.widget.toString() != "CourseCalculatorPageSend"){
+                Navigator.of(context).pop();
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) =>CourseCalculatorPageSend()));
+              }
+              else
+                Navigator.of(context).pop();
+            },
+          ),
+          ListTile(
             leading: Icon(Icons.alarm_sharp),
             title: Text("Hatırlatıcılar Listesi", textAlign: TextAlign.center,),
             onTap: (){
@@ -398,18 +413,6 @@ Widget getSideBar(BuildContext context){
               if(context.widget.toString() != "ListAlarmsSend"){
                 Navigator.of(context).pop();
                 Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListAlarmsSend()));
-              }
-              else
-                Navigator.of(context).pop();
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.calculate),
-            title: Text("Ders Sayısı Hesaplama", textAlign: TextAlign.center,),
-            onTap: (){
-              if(context.widget.toString() != "CourseCalculatorPageSend"){
-                Navigator.of(context).pop();
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) =>CourseCalculatorPageSend()));
               }
               else
                 Navigator.of(context).pop();
@@ -477,7 +480,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   Icon alarmIcon = Icon(Icons.alarm_off);
   Future<List<Single>>? loadLecturers, loadCourses, loadTopics;
   GestureDetector? gdDate1, gdDate2;
-  List<String> uniqueLecturers = List.empty(growable: true), uniqueCourses = List.empty(growable: true), uniqueTopics = List.empty(growable: true), uniqueTypes = List.empty(growable: true);
+  List<String> uniqueCourses = List.empty(growable: true), uniqueTopics = List.empty(growable: true);
   bool lastDate = false;
   void download() async{
     final externalDir = await getExternalStorageDirectory();
