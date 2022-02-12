@@ -1,6 +1,6 @@
 class Backup{
   String? lecturer, course, topic, type, time, timeType, alarms, delay;
-  bool? cancelAlarm, listColored;
+  bool? cancelAlarm, listColored, listRotate;
   Backup.initial(){
     lecturer = "Tüm Eğiticiler";
     course = "Tüm Sınıflar";
@@ -10,10 +10,11 @@ class Backup{
     timeType = "Dakika";
     cancelAlarm = false;
     listColored = false;
+    listRotate = false;
     alarms = '';
     delay = '5';
   }
-  Backup(this.lecturer, this.course, this.topic, this.type, this.time, this.timeType, this.cancelAlarm, this.listColored, this.alarms, this.delay);
+  Backup(this.lecturer, this.course, this.topic, this.type, this.time, this.timeType, this.cancelAlarm, this.listColored, this.listRotate, this.alarms, this.delay);
   Backup.fromJson(Map<String, dynamic> json):
     lecturer = json['lecturer'],
     course = json['course'],
@@ -23,6 +24,7 @@ class Backup{
     timeType = json['timeType'],
     cancelAlarm = json['cancelAlarm'],
     listColored = json['listColored'],
+    listRotate = json['listRotate'],
     alarms = json['alarms'],    
     delay = json['delay'];
   Map<String, dynamic> toJson() {
@@ -35,6 +37,7 @@ class Backup{
       'timeType': timeType,
       'cancelAlarm': cancelAlarm,
       'listColored': listColored,
+      'listRotate': listRotate,
       'alarms': alarms,
       'delay': delay,
     };
@@ -65,6 +68,9 @@ class Backup{
         break;
       case "listColored":
         this.listColored = value;
+        break;
+      case "listRotate":
+        this.listRotate = value;
         break;
       case "alarms":
         this.alarms = value;

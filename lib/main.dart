@@ -9,7 +9,8 @@ import 'package:ders_hatirlatici/notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart';
+import 'package:intl/date_symbol_data_local.dart' as symbol;
+import 'package:intl/intl_standalone.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'Alarm.dart';
@@ -20,9 +21,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:http/http.dart' as http;
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:sensors_plus/sensors_plus.dart';
-
 import 'course_calculator.dart';
+import 'list.dart';
 
 //test
 const String XL_URL = "https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobil/releases/download/Attachments/xl.zip";
@@ -35,7 +35,6 @@ int tillCancel = 0;
 bool upToDate = false;
 Backup save = new Backup.initial();
 MyNotifications notifications = new MyNotifications();
-
 int whichMonth(String month){
   switch(month){
     case "Ocak":
@@ -238,6 +237,7 @@ DateTime stringToDate(String strDate){
 void main() async{
   await WidgetsFlutterBinding.ensureInitialized();
   await FlutterDownloader.initialize(debug: true);
+  await symbol.initializeDateFormatting(await findSystemLocale(), '');
   AwesomeNotifications().actionStream.listen((event) async{
     print('Event received: ' + event.toMap().toString());
     if(event.buttonKeyPressed == 'btnDelay'){
@@ -564,7 +564,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             setState(() {
               if(pickedDate!=null)
                 selectedDate2 = pickedDate;
-                gdDate1!.onTap!();
             });
           }
         }
@@ -582,7 +581,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             if(pickedDate!=null){
               selectedDate2 = pickedDate;
               lastDate = true;
-              gdDate1!.onTap!();
             }
           });
         }
@@ -595,36 +593,36 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         title: Text("Ders Hatırlatıcı"),
         centerTitle: true,
         actions: [
-          ElevatedButton.icon(onPressed: (){
+         IconButton(onPressed: (){
             showDialog<bool>(
               context: context,
               builder: (c) =>
               AlertDialog(
-                title: Center(child: Text('Onayla')),
-                content: Text('Filtreleleri sifirlamak istediğinize emin misiniz?'),
-                actions: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        child: Text('Hayır'),
-                        onPressed: () => Navigator.pop(context, false),
-                      ),
-                      SizedBox(width: 10,),
-                      ElevatedButton(
-                        child: Text('Evet'),
-                        onPressed: () async{
-                          Navigator.pop(context, false);     
-                        setState(() {
-                            save = new Backup.initial();
-                        });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ));
-          }, icon: Icon(Icons.restore), label: Text("Geri Al"), )
+                  title: Center(child: Text('Onayla')),
+                  content: Text('Filtreleri sıfırlamak istediğinize emin misiniz?'),
+                  actions: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          child: Text('Hayır'),
+                          onPressed: () => Navigator.pop(context, false),
+                        ),
+                        SizedBox(width: 10,),
+                        ElevatedButton(
+                          child: Text('Evet'),
+                          onPressed: () async{
+                            setState(() {
+                              save = new Backup.initial();
+                            });
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ));
+          }, icon: Icon(Icons.restore))
         ],
       ),
       body: Scrollbar(
@@ -802,172 +800,172 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             ],
                               ),
                           ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: MediaQuery. of(context). size. width/2,
-                    child: Column(
-                        children: [
-                          RadioListTile<int>(
-                        value: 0,
-                        groupValue: selectedRadio,
-                        onChanged: (nValue) {
-                          setState(() {
-                            selectedRadio = nValue;
-                          });
-                        },
-                        title: Text("En Yakındaki"),
-                    ),
-                    RadioListTile<int>(
-                        value: 1,
-                        groupValue: selectedRadio,
-                        onChanged: (nValue) {
-                          setState(() {
-                            selectedRadio = nValue;
-                          });
-                        },
-                        title: Text("Şuandaki"),
-                    ),
-                        ],
-                    ),
-                  ),   
-                  SizedBox(height: 20,),        
-                  ElevatedButton.icon(onPressed: (){
-                    if(selectedRadio == null)
-                        return;
-                    List<Single> toSendS = new List.empty(growable: true);
-                    for(Single single in s){
-                        DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
-                        DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
-                        if(validSingle(single) && ((selectedRadio == 1 && singleDt.compareTo(nowDate) == 0) || selectedRadio == 0 && singleDt.compareTo(nowDate)  == 1)){
-                            toSendS.add(single);
-                            break;}
-                    }
-                    if(toSendS.length > 0)
-                        Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: selectedRadio == 0?'En Yakındaki Ders':'Şuandaki Ders',)));
-                    else
-                        ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders Bulunamadı', textAlign: TextAlign.center)));
-                  }, icon: Icon(Icons.find_in_page_rounded), label: Text('Dersi Bul'),),
-                ],
-              ),
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 40,
-                        child: TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(hintText: "10", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
-                          controller: timeBeforeController,
-                          textAlign: TextAlign.center,
-                        ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: MediaQuery. of(context). size. width/2,
+                                child: Column(
+                                    children: [
+                                      RadioListTile<int>(
+                                    value: 0,
+                                    groupValue: selectedRadio,
+                                    onChanged: (nValue) {
+                                      setState(() {
+                                        selectedRadio = nValue;
+                                      });
+                                    },
+                                    title: Text("En Yakındaki"),
+                                ),
+                                RadioListTile<int>(
+                                    value: 1,
+                                    groupValue: selectedRadio,
+                                    onChanged: (nValue) {
+                                      setState(() {
+                                        selectedRadio = nValue;
+                                      });
+                                    },
+                                    title: Text("Şuandaki"),
+                                ),
+                                    ],
+                                ),
+                              ),   
+                              SizedBox(height: 20,),        
+                              ElevatedButton.icon(onPressed: (){
+                                if(selectedRadio == null)
+                                    return;
+                                List<Single> toSendS = new List.empty(growable: true);
+                                for(Single single in s){
+                                    DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
+                                    DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
+                                    if(validSingle(single) && ((selectedRadio == 1 && singleDt.compareTo(nowDate) == 0) || selectedRadio == 0 && singleDt.compareTo(nowDate)  == 1)){
+                                        toSendS.add(single);
+                                        break;}
+                                }
+                                if(toSendS.length > 0)
+                                    Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: selectedRadio == 0?'En Yakındaki Ders':'Şuandaki Ders',)));
+                                else
+                                    ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders Bulunamadı', textAlign: TextAlign.center)));
+                              }, icon: Icon(Icons.find_in_page_rounded), label: Text('Dersi Bul'),),
+              ],
+            ),
+            Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 40,
+                      child: TextField(
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(hintText: "10", labelStyle: TextStyle(fontSize: 12), contentPadding: EdgeInsets.all(10)),
+                        controller: timeBeforeController,
+                        textAlign: TextAlign.center,
                       ),
-                      SizedBox(width: 10,),
-                      DropdownButton<String>(
-                        alignment: AlignmentDirectional.center,
-                        value: save.timeType,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            save.timeType = newValue!;
-                          });
-                            saveSelections(save);
-                        },
-                        items: <String>['Dakika', 'Saat', 'Gün'].map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            alignment: AlignmentDirectional.center,
-                            value: value,
-                            child: Text(value),
-                            onTap: (){
-                              saveSelections(save);
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      SizedBox(width: 10,),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text("Kalınca", style: TextStyle(fontSize: 18)),
-                  ),
-                  ElevatedButton.icon(
-                    label: Text("En Yakın Dersi Hatırlat"),
-                    icon: Icon(Icons.timelapse),
-                    onPressed: () {
-                      bool foundSingle = false;
-                      for(Single single in s){
-                        DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
-                        DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
-                        if(validSingle(single) && singleDt.compareTo(nowDate) == 1){                    
-                          int difference = single.date.difference(DateTime.now()).inSeconds;
-                          int multiplier = 0;
-                          switch(save.timeType){
-                            case "Dakika":
-                              multiplier = 60;
-                              break;
-                            case "Saat":
-                              multiplier = 3600;
-                              break;
-                            case "Gün":
-                              multiplier = 86400;
-                              break;
-                          }
-                          print(difference.toString() +" " + (int.parse(timeBeforeController.value.text)*multiplier).toString());
-                          if(difference - int.parse(timeBeforeController.value.text)*multiplier < 0)
-                            continue;
-                          tillCancel = difference - int.parse(timeBeforeController.value.text)*multiplier;
-                          FocusScope.of(context).unfocus();
-                          ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('En yakın derse ' + (tillCancel/60).ceil().toString() +  ' dakika içinde hatırlatılıcaksınız.', textAlign: TextAlign.center)));
-                          int tillMin = (tillCancel/60).round();
-                          Single tmpSingle = Single(DateTime.now().add(Duration(minutes: tillMin)), single.course, single.lecturer, single.topic, single.type);
-                          Alarm alarm = Alarm(alarms.length, tmpSingle); 
-                          notifications.scheduleNotify(tillCancel, alarm.id, tmpSingle, single);
-                          updateAlarms(alarm);
-                          setState(() {
-                            alarmIcon = Icon(Icons.alarm_on);
-                          });
-                          foundSingle = true;
-                          break;
-                        }
-                      }
-                      if(!foundSingle){
+                    ),
+                    SizedBox(width: 10,),
+                    DropdownButton<String>(
+                      alignment: AlignmentDirectional.center,
+                      value: save.timeType,
+                      onChanged: (String? newValue) {
                         setState(() {
-                          remindClosest = false;
+                          save.timeType = newValue!;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Seçilenlere göre yakında bir ders bulunamadı.', textAlign: TextAlign.center)));
+                          saveSelections(save);
+                      },
+                      items: <String>['Dakika', 'Saat', 'Gün'].map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          alignment: AlignmentDirectional.center,
+                          value: value,
+                          child: Text(value),
+                          onTap: (){
+                            saveSelections(save);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(width: 10,),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text("Kalınca", style: TextStyle(fontSize: 18)),
+                ),
+                ElevatedButton.icon(
+                  label: Text("En Yakın Dersi Hatırlat"),
+                  icon: Icon(Icons.timelapse),
+                  onPressed: () {
+                    bool foundSingle = false;
+                    for(Single single in s){
+                      DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day, single.date.hour);
+                      DateTime nowDate = new DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, DateTime.now().hour);
+                      if(validSingle(single) && singleDt.compareTo(nowDate) == 1){                    
+                        int difference = single.date.difference(DateTime.now()).inSeconds;
+                        int multiplier = 0;
+                        switch(save.timeType){
+                          case "Dakika":
+                            multiplier = 60;
+                            break;
+                          case "Saat":
+                            multiplier = 3600;
+                            break;
+                          case "Gün":
+                            multiplier = 86400;
+                            break;
+                        }
+                        print(difference.toString() +" " + (int.parse(timeBeforeController.value.text)*multiplier).toString());
+                        if(difference - int.parse(timeBeforeController.value.text)*multiplier < 0)
+                          continue;
+                        tillCancel = difference - int.parse(timeBeforeController.value.text)*multiplier;
+                        FocusScope.of(context).unfocus();
+                        ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('En yakın derse ' + (tillCancel/60).ceil().toString() +  ' dakika içinde hatırlatılıcaksınız.', textAlign: TextAlign.center)));
+                        int tillMin = (tillCancel/60).round();
+                        Single tmpSingle = Single(DateTime.now().add(Duration(minutes: tillMin)), single.course, single.lecturer, single.topic, single.type);
+                        Alarm alarm = Alarm(alarms.length, tmpSingle); 
+                        notifications.scheduleNotify(tillCancel, alarm.id, tmpSingle, single);
+                        updateAlarms(alarm);
+                        setState(() {
+                          alarmIcon = Icon(Icons.alarm_on);
+                        });
+                        foundSingle = true;
+                        break;
                       }
-                    },
-                  ),
-                  SizedBox(height: 10,),
-                  ElevatedButton.icon(onPressed: () async{
-                    save.time = timeBeforeController.text;
-                    print(save.toString());
-                    saveSelections(save);
-                    final DateTime? pickedDate = await showDatePicker(
-                      helpText: "Tarih Seçin:",
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2050),
-                    );
-                    if(pickedDate != null){
-                      List<Single> toSendS = List.empty(growable: true);
-                      for(Single single in s){
-                        DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day);
-                        DateTime selectedDt = new DateTime(pickedDate.year, pickedDate.month, pickedDate.day);
-                        if(validSingle(single) && (singleDt.compareTo(selectedDt) == 0))
-                          toSendS.add(single);
-                      }
-                      Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: 'Hatırlatılıcak Ders Seçme',)));
                     }
-                  }, icon: Icon(Icons.date_range), label: Text('Tarihdeki Dersleri Hatırlat')),
-                ],
-              ),
+                    if(!foundSingle){
+                      setState(() {
+                        remindClosest = false;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Seçilenlere göre yakında bir ders bulunamadı.', textAlign: TextAlign.center)));
+                    }
+                  },
+                ),
+                SizedBox(height: 10,),
+                ElevatedButton.icon(onPressed: () async{
+                  save.time = timeBeforeController.text;
+                  print(save.toString());
+                  saveSelections(save);
+                  final DateTime? pickedDate = await showDatePicker(
+                    helpText: "Tarih Seçin:",
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2050),
+                  );
+                  if(pickedDate != null){
+                    List<Single> toSendS = List.empty(growable: true);
+                    for(Single single in s){
+                      DateTime singleDt = new DateTime(single.date.year, single.date.month, single.date.day);
+                      DateTime selectedDt = new DateTime(pickedDate.year, pickedDate.month, pickedDate.day);
+                      if(validSingle(single) && (singleDt.compareTo(selectedDt) == 0))
+                        toSendS.add(single);
+                    }
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) =>ListPageSend(currentS: toSendS, title: 'Hatırlatılıcak Ders Seçme',)));
+                  }
+                }, icon: Icon(Icons.date_range), label: Text('Tarihdeki Dersleri Hatırlat')),
+              ],
+            ),
               ],
                   ),
                       ),
@@ -1080,171 +1078,6 @@ class ListAlarms extends State<ListAlarmsSend> {
           ),
         ),
       ),
-    );
-  }
-}
-class ListPageSend extends StatefulWidget {
-  final List<Single>? currentS;
-  final String? title;
-  ListPageSend({@required this.currentS, @required this.title});
-  @override
-  State<StatefulWidget> createState() {
-    return ListPage(this.currentS, this.title);
-  }
-}
-class ListPage extends State<ListPageSend> {
-  List<Single>? currentS;
-  String? title;
-  List<Icon>? icons;
-  ListPage(this.currentS, this.title);
-  StreamSubscription? accelerometer;
-  bool landscape = false;
-  bool left = true;
-  @override
-  void initState() {
-    icons = List.filled(currentS!.length, Icon(Icons.alarm_add, color: Colors.lightGreenAccent));
-    accelerometer = accelerometerEvents.listen((AccelerometerEvent  event) {
-      setState(() {
-        if(event.y < 5)landscape=true;
-        else landscape = false;
-        if(event.x < 0)left = true;
-        else left = false;
-      });
-    });
-    super.initState();
-  }
-    @override
-  void dispose() {
-    super.dispose();
-    accelerometer!.cancel();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp,DeviceOrientation.portraitDown,]);
-  }
-  void setAlarm(int index){
-    if(currentS![index].date.compareTo(DateTime.now()) == 1){    
-      int difference = currentS![index].date.difference(DateTime.now()).inSeconds;
-      int multiplier = 0;
-      switch(save.timeType){
-        case "Dakika":
-          multiplier = 60;
-          break;
-        case "Saat":
-          multiplier = 3600;
-          break;
-        case "Gün":
-          multiplier = 86400;
-          break;
-      }
-      tillCancel = difference - int.parse(save.time!)*multiplier;
-      if(tillCancel < 1)
-        ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Ders seçilen süreden önce başlıyacak, daha erken süre seçin.', textAlign: TextAlign.center)));
-      else{
-        ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Derse ' + (tillCancel/60).ceil().toString() +  ' dakika içinde hatırlatılıcaksınız.', textAlign: TextAlign.center)));
-        setState(() {
-          icons?[index] = Icon(Icons.alarm_on, color: Colors.lightGreenAccent);
-        });
-        int tillMin = (tillCancel/60).round();
-        Single tmpSingle = Single(DateTime.now().add(Duration(minutes: tillMin)), currentS![index].course, currentS![index].lecturer, currentS![index].topic, currentS![index].type);
-        Alarm alarm = Alarm(alarms.length, tmpSingle);
-        notifications.scheduleNotify(tillCancel, alarm.id, tmpSingle, currentS![index]);
-        updateAlarms(alarm);
-      }
-    }
-  }
-  @override
-  Widget build(BuildContext context) {
-    if(!landscape){  
-      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp,DeviceOrientation.portraitDown,]);
-    }
-    else{
-      SystemChrome.setPreferredOrientations([left==true?DeviceOrientation.landscapeRight:DeviceOrientation.landscapeLeft]);
-    }
-    return Scaffold(
-      appBar: AppBar(
-        title: FittedBox(child: Text(this.title!)),
-        centerTitle: true,
-      ),
-      body: Container(
-        width: MediaQuery.of(context).size.width,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              decoration: BoxDecoration(),
-              columnSpacing: 10,
-              headingRowColor: MaterialStateColor.resolveWith((states) => Colors.black12),
-              columns: [
-                if(title == 'Hatırlatılıcak Ders Seçme')
-                  DataColumn(label: ElevatedButton.icon(onPressed: (){
-                    showDialog<bool>(
-                  context: context,
-                  builder: (c) =>
-                AlertDialog(
-                  title: Center(child: Text('Onayla')),
-                  content: Text('Tüm derslere hatırlatılmak istediğinize emin misiniz?'),
-                  actions: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          child: Text('Hayır'),
-                          onPressed: () => Navigator.pop(context, false),
-                        ),
-                        SizedBox(width: 10,),
-                        ElevatedButton(
-                          child: Text('Evet'),
-                          onPressed: () async{
-                            Navigator.pop(context, false);  
-                            for(int i=0;i<currentS!.length;i++)
-                              setAlarm(i);
-                            setState(() {
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ));
-                  }, icon: Icon(Icons.select_all, color: Colors.white), style: ElevatedButton.styleFrom(primary: Colors.transparent, elevation: 0), label: Text('Tümü', style: TextStyle(color: Colors.white)))),
-                DataColumn(label: Text('Tarih')),
-                if(save.course == "Tüm Sınıflar")
-                  DataColumn(label: Text('Sınıf')),
-                if(save.type == "Tüm Tipler")
-                  DataColumn(label: Text('Tip')),
-                if(save.topic == "Tüm Konular")
-                  DataColumn(label: Text('Konu')),
-                if(save.lecturer == "Tüm Eğiticiler")
-                  DataColumn(label: Text('Eğitici')),
-              ],
-              rows: List.generate(currentS!.length, (index) => getDataRow(index))
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  DataRow getDataRow(index) {
-    return DataRow(
-      color: !save.listColored!?MaterialStateColor.resolveWith((states) => Colors.transparent):MaterialStateColor.resolveWith((states) => currentS![index].type == "UE"?Colors.orange[700]!:Colors.lightBlue[700]!),
-      cells: <DataCell>[
-        if(title == 'Hatırlatılıcak Ders Seçme')
-          DataCell(ElevatedButton.icon(onPressed: (){
-            if(icons?[index].icon == Icons.alarm_on){
-              ScaffoldMessenger.of(context).showSnackBar(new SnackBar(content: Text('Hatırlatıcıları yan menüden Hatırlatıcılar Listesine girerek iptal edebilirsiniz.', textAlign: TextAlign.center)));
-            }
-            else
-              setAlarm(index);
-          }, style: ElevatedButton.styleFrom(primary: Colors.transparent, elevation: 0), icon: currentS![index].date.compareTo(DateTime.now()) != 1?Icon(Icons.alarm_add, color: Colors.grey,):icons![index], label: Text('')) ),
-        DataCell(Text(currentS![index].date.day.toString() + "/" + currentS![index].date.month.toString() + "/" + currentS![index].date.year.toString() +" - " + currentS![index].date.hour.toString()+":00")),
-        if(save.course == "Tüm Sınıflar")
-          DataCell(Text(currentS![index].course)),
-        if(save.type == "Tüm Tipler")
-          DataCell(Text(currentS![index].type)),
-        if(save.topic == "Tüm Konular")
-          DataCell(Text(currentS![index].topic)),
-        if(save.lecturer == "Tüm Eğiticiler")
-          DataCell(Text(currentS![index].lecturer)),
-      ],
     );
   }
 }
