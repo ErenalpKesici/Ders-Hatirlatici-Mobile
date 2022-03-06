@@ -23,7 +23,6 @@ class MyNotifications{
       alarms = nAlarms;
     });
     tz.initializeTimeZones();  
-    
     AwesomeNotifications().createNotification(
       schedule: NotificationInterval(interval: inSeconds, timeZone: await AwesomeNotifications().getLocalTimeZoneIdentifier(), repeats: false),
       actionButtons: [

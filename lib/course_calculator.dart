@@ -12,7 +12,7 @@ class CourseCalculatorPageSend extends StatefulWidget{
   }
 }
 class CourseCalculatorPage extends State<CourseCalculatorPageSend>{
-  String selectedLecturer = 'Tüm Eğiticiler', selectedType = "Tüm Tipler", beforeAfter = 'önce';
+  String selectedLecturer = 'Tüm Eğiticiler', selectedType = "Tüm Eğitim Tipleri", beforeAfter = 'önce';
   DateTime selectedDate = DateTime.now();
   bool filteredDate = false;
   @override
@@ -130,7 +130,7 @@ class CourseCalculatorPage extends State<CourseCalculatorPageSend>{
                 if(selectedLecturer != "Tüm Eğiticiler"){
                   filteredS = filteredS.where((element) => element.lecturer == selectedLecturer).toList();
                 }
-                if(selectedType != "Tüm Tipler"){
+                if(selectedType != "Tüm Eğitim Tipleri"){
                   filteredS = filteredS.where((element) => element.type == selectedType).toList();
                 }
                 if(filteredDate){

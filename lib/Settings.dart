@@ -96,12 +96,14 @@ void tryUpdate(BuildContext context) async{
   if(await Permission.storage.request() == PermissionStatus.granted){
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     String status = "Güncellemek ister misiniz?";
+    int? statusVal;
     http.Response response = await http.get(Uri.parse('https://github.com/ErenalpKesici/Ders-Hatirlatici-Mobile/releases/tag/Attachments'));
     dom.Document  document = parse(response.body);
     String url = "https://www.github.com"+document.getElementsByClassName('Box-row')[0].children[1].attributes.values.first;
     String latestVersion = url.split('/').last.split('-')[1];
     if(packageInfo.version.compareTo(latestVersion) > -1) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Program günceldir.")));
+      if(context.widget.toString() == "SettingsSend") 
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Program güncel.")));
     }
     else{
       await showDialog(barrierDismissible: false, context: context, builder: (context){
@@ -109,7 +111,7 @@ void tryUpdate(BuildContext context) async{
           builder: (BuildContext context, void Function(void Function()) setInnerState) {
             return AlertDialog(
               title: Text("Mevcut Versiyon: " + packageInfo.version + " Son Versiyon: " + latestVersion, textAlign: TextAlign.center,),
-              content: Text(status, textAlign: TextAlign.center,),
+              content: statusVal == null ? Text(status, textAlign: TextAlign.center,) : LinearProgressIndicator(value: statusVal!/100,),
               actions: <Widget>[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -136,7 +138,8 @@ void tryUpdate(BuildContext context) async{
                           FlutterDownloader.registerCallback(downloadCallback);
                           _port.listen((dynamic data) async{
                             setInnerState((){
-                              status = data[2].toString() + " % ";
+                              status = data[2].toString();
+                              statusVal = int.tryParse(status);
                             });
                             if(data[1] == const DownloadTaskStatus(3)){
                               FlutterDownloader.open(taskId: data[0]);

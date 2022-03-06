@@ -73,12 +73,12 @@ class ListPage extends State<ListPageSend> {
       ],
     ));
       }, icon: Icon(Icons.select_all, color: Colors.white), style: ElevatedButton.styleFrom(primary: Colors.transparent, elevation: 0), label: Text('Tümü', style: TextStyle(color: Colors.white)))));
-    cols.add(DataColumn(label: Text('Tarih & Saatler')));
+    cols.add(DataColumn(label: Text('Tarih')));
     if(save.course == "Tüm Sınıflar")
       cols.add(DataColumn(label: Text('Sınıf')));
-    if(save.type == "Tüm Tipler")
+    if(save.type == "Tüm Eğitim Tipleri")
       cols.add(DataColumn(label: Text('Tip')));
-    if(save.topic == "Tüm Konular")
+    if(save.topic == "Tüm Ders Konuları")
       cols.add(DataColumn(label: Text('Konu')));
     if(save.lecturer == "Tüm Eğiticiler")
       cols.add(DataColumn(label: Text('Eğitici')));
@@ -86,7 +86,13 @@ class ListPage extends State<ListPageSend> {
       if(i == 0 || DateUtils.dateOnly(currentS![i - 1].date) != DateUtils.dateOnly(currentS![i].date)){
         rows.add(DataRow(color: MaterialStateColor.resolveWith((states) => Colors.grey), cells: List.generate(cols.length, (index){
           if(index == 0){
-            return DataCell(Text(DateFormat.yMMMMd('tr_TR').format(currentS![i].date)));
+            return DataCell(Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(DateFormat('dd-MM-yy').format(currentS![i].date)),
+                Text(DateFormat('EEEE').format(currentS![i].date))
+              ],
+            ));
           }
           return DataCell(Divider());
         })));
@@ -177,12 +183,12 @@ class ListPage extends State<ListPageSend> {
             else
               setAlarm(index);
           }, style: ElevatedButton.styleFrom(primary: Colors.transparent, elevation: 0), icon: currentS![index].date.compareTo(DateTime.now()) != 1?Icon(Icons.alarm_add, color: Colors.grey,):icons![index], label: Text('')) ),
-        DataCell(Text(currentS![index].date.hour.toString()+":00")),
+        DataCell(Text(currentS![index].date.hour.toString()+":00", textAlign: TextAlign.center,)),
         if(save.course == "Tüm Sınıflar")
           DataCell(Text(currentS![index].course)),
-        if(save.type == "Tüm Tipler")
+        if(save.type == "Tüm Eğitim Tipleri")
           DataCell(Text(currentS![index].type)),
-        if(save.topic == "Tüm Konular")
+        if(save.topic == "Tüm Ders Konuları")
           DataCell(Text(currentS![index].topic)),
         if(save.lecturer == "Tüm Eğiticiler")
           DataCell(Text(currentS![index].lecturer)),

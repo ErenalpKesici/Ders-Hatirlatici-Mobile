@@ -4,8 +4,8 @@ class Backup{
   Backup.initial(){
     lecturer = "Tüm Eğiticiler";
     course = "Tüm Sınıflar";
-    topic = "Tüm Konular";
-    type = "Tüm Tipler";
+    topic = "Tüm Ders Konuları";
+    type = "Tüm Eğitim Tipleri";
     time = "10";
     timeType = "Dakika";
     cancelAlarm = false;
