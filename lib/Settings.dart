@@ -29,7 +29,6 @@ class Settings extends State<SettingsSend> {
   Widget build(BuildContext context) {
     delayController = TextEditingController(text: save?.delay);
     return Scaffold(
-        drawer: getSideBar(context),
         appBar: AppBar(
           title: Text("Ayarlar"),
           centerTitle: true,

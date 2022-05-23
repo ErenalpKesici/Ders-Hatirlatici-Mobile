@@ -459,9 +459,19 @@ Widget getSideBar(BuildContext context) {
       child: ListView(
         children: [
           DrawerHeader(
-              child: Image(
-            image: AssetImage('assets/logo.png'),
-            fit: BoxFit.fitHeight,
+              child: IconButton(
+            icon: Image(
+              image: AssetImage('assets/logo.png'),
+              fit: BoxFit.fitHeight,
+            ),
+            onPressed: () {
+              if (context.widget.toString() != "MyHomePage") {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => MyHomePage()));
+              } else
+                Navigator.of(context).pop();
+            },
           )),
           ListTile(
             leading: Icon(Icons.home),
@@ -878,7 +888,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.all(4.0),
+                padding: const EdgeInsets.all(8.0),
                 child: Stack(alignment: AlignmentDirectional.center, children: [
                   Divider(
                     thickness: 1,
@@ -913,26 +923,29 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
                                     children: [
-                                      ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                              primary: Colors.deepOrange),
-                                          onPressed: () {
-                                            setState(() {
-                                              if (listType == 'Basit Mod') {
-                                                listType = 'Ayrıntılı Mod';
-                                              } else
-                                                listType = 'Basit Mod';
-                                            });
-                                          },
-                                          icon: Icon(
-                                              Icons
-                                                  .settings_applications_rounded,
-                                              color: Colors.white),
-                                          label: Text(
-                                            listType,
-                                            style:
-                                                TextStyle(color: Colors.white),
-                                          )),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: ElevatedButton.icon(
+                                            style: ElevatedButton.styleFrom(
+                                                primary: Colors.deepOrange),
+                                            onPressed: () {
+                                              setState(() {
+                                                if (listType == 'Basit Mod') {
+                                                  listType = 'Ayrıntılı Mod';
+                                                } else
+                                                  listType = 'Basit Mod';
+                                              });
+                                            },
+                                            icon: Icon(
+                                                Icons
+                                                    .settings_applications_rounded,
+                                                color: Colors.white),
+                                            label: Text(
+                                              listType,
+                                              style: TextStyle(
+                                                  color: Colors.white),
+                                            )),
+                                      ),
                                       if (listType == 'Ayrıntılı Mod')
                                         Column(
                                           children: [
@@ -1595,119 +1608,123 @@ class ListAlarms extends State<ListAlarmsSend> {
           ),
         )
       ]),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columnSpacing: 10,
-            sortColumnIndex: 1,
-            columns: [
-              DataColumn(
-                  label: ElevatedButton.icon(
-                      onPressed: () {
-                        showDialog<bool>(
-                            context: context,
-                            builder: (c) => AlertDialog(
-                                  title: Center(child: Text('Onayla')),
-                                  content: Text(
-                                      'Tüm hatırlatıcıları silmek istediğinize emin misiniz?'),
-                                  actions: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        ElevatedButton(
-                                          child: Text('Hayır'),
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                        ),
-                                        SizedBox(
-                                          width: 10,
-                                        ),
-                                        ElevatedButton(
-                                          child: Text('Evet'),
-                                          onPressed: () async {
-                                            Navigator.pop(context, false);
-                                            setState(() {
-                                              alarms =
-                                                  List.empty(growable: true);
-                                            });
-                                            save.alarms = "";
-                                            saveSelections(save);
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ));
-                      },
-                      icon:
-                          Icon(Icons.delete_sweep_rounded, color: Colors.white),
-                      style: ElevatedButton.styleFrom(
-                          primary: Colors.transparent, elevation: 0),
-                      label: Text("", style: TextStyle(color: Colors.white)))),
-              DataColumn(label: Text('Tarih')),
-              DataColumn(label: Text('Ders')),
-              DataColumn(label: Text('Konu')),
-              DataColumn(label: Text('Eğitici')),
-            ],
-            rows: alarms
-                .map<DataRow>((e) => DataRow(
-                        color: MaterialStateColor.resolveWith((states) =>
-                            e.single.date.compareTo(DateTime.now()) == 1
-                                ? Colors.green
-                                : Colors.red),
-                        cells: [
-                          DataCell(ElevatedButton.icon(
-                              onPressed: () {
-                                List<Alarm> nAlarms =
-                                    List.empty(growable: true);
-                                save.alarms = "";
-                                for (Alarm alarm in alarms) {
-                                  if (alarm != e) nAlarms.add(alarm);
-                                  save.alarms = save.alarms! +
-                                      alarm.id.toString() +
-                                      "~" +
-                                      alarm.single.toSave() +
-                                      "*";
-                                }
-                                setState(() {
-                                  alarms = nAlarms;
-                                });
-                                alarms.sort((a, b) =>
-                                    a.single.date.compareTo(b.single.date));
-                                notifications.cancelNotifications(e.id);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                  elevation: 0, primary: Colors.transparent),
-                              icon: Icon(Icons.delete),
-                              label: Text(''))),
-                          DataCell(Text(
-                            displayDate(e.single.date),
-                            textAlign: TextAlign.center,
-                          )),
-                          DataCell(Text(
-                            e.single.course,
-                            textAlign: TextAlign.center,
-                          )),
-                          DataCell(
-                            Container(
-                                width: 100,
-                                child: Text(e.single.topic,
-                                    textAlign: TextAlign.center,
-                                    overflow: TextOverflow.fade)),
-                          ),
-                          DataCell(
-                            Text(e.single.lecturer,
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.fade),
-                          ),
-                        ]))
-                .toList(),
-          ),
-        ),
-      ),
+      body: alarms.isEmpty
+          ? Center(child: Text('Hatırlatıcı bulunamadı...'))
+          : SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 10,
+                  sortColumnIndex: 1,
+                  columns: [
+                    DataColumn(
+                        label: ElevatedButton.icon(
+                            onPressed: () {
+                              showDialog<bool>(
+                                  context: context,
+                                  builder: (c) => AlertDialog(
+                                        title: Center(child: Text('Onayla')),
+                                        content: Text(
+                                            'Tüm hatırlatıcıları silmek istediğinize emin misiniz?'),
+                                        actions: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              ElevatedButton(
+                                                child: Text('Hayır'),
+                                                onPressed: () => Navigator.pop(
+                                                    context, false),
+                                              ),
+                                              SizedBox(
+                                                width: 10,
+                                              ),
+                                              ElevatedButton(
+                                                child: Text('Evet'),
+                                                onPressed: () async {
+                                                  Navigator.pop(context, false);
+                                                  setState(() {
+                                                    alarms = List.empty(
+                                                        growable: true);
+                                                  });
+                                                  save.alarms = "";
+                                                  saveSelections(save);
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ));
+                            },
+                            icon: Icon(Icons.delete_sweep_rounded,
+                                color: Colors.white),
+                            style: ElevatedButton.styleFrom(
+                                primary: Colors.transparent, elevation: 0),
+                            label: Text("",
+                                style: TextStyle(color: Colors.white)))),
+                    DataColumn(label: Text('Tarih')),
+                    DataColumn(label: Text('Ders')),
+                    DataColumn(label: Text('Konu')),
+                    DataColumn(label: Text('Eğitici')),
+                  ],
+                  rows: alarms
+                      .map<DataRow>((e) => DataRow(
+                              color: MaterialStateColor.resolveWith((states) =>
+                                  e.single.date.compareTo(DateTime.now()) == 1
+                                      ? Colors.green
+                                      : Colors.red),
+                              cells: [
+                                DataCell(ElevatedButton.icon(
+                                    onPressed: () {
+                                      List<Alarm> nAlarms =
+                                          List.empty(growable: true);
+                                      save.alarms = "";
+                                      for (Alarm alarm in alarms) {
+                                        if (alarm != e) nAlarms.add(alarm);
+                                        save.alarms = save.alarms! +
+                                            alarm.id.toString() +
+                                            "~" +
+                                            alarm.single.toSave() +
+                                            "*";
+                                      }
+                                      setState(() {
+                                        alarms = nAlarms;
+                                      });
+                                      alarms.sort((a, b) => a.single.date
+                                          .compareTo(b.single.date));
+                                      notifications.cancelNotifications(e.id);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                        elevation: 0,
+                                        primary: Colors.transparent),
+                                    icon: Icon(Icons.delete),
+                                    label: Text(''))),
+                                DataCell(Text(
+                                  displayDate(e.single.date),
+                                  textAlign: TextAlign.center,
+                                )),
+                                DataCell(Text(
+                                  e.single.course,
+                                  textAlign: TextAlign.center,
+                                )),
+                                DataCell(
+                                  Container(
+                                      width: 100,
+                                      child: Text(e.single.topic,
+                                          textAlign: TextAlign.center,
+                                          overflow: TextOverflow.fade)),
+                                ),
+                                DataCell(
+                                  Text(e.single.lecturer,
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.fade),
+                                ),
+                              ]))
+                      .toList(),
+                ),
+              ),
+            ),
     );
   }
 }
